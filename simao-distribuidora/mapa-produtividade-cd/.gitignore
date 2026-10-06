@@ -5,3 +5,5 @@ carga-inicial/
 *.xls
 *.csv
 saida-exportacoes/
+Copia_Seguranca_*.json
+copia-teste-migracao.json

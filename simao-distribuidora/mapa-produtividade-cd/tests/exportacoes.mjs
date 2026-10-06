@@ -3,7 +3,7 @@
 // Uso: SAIDA=/caminho node tests/exportacoes.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { servidor, navegador, seed, novaPagina, aguardarPronto } from './util.mjs';
+import { servidor, navegador, seed, novaPagina, aguardarPronto, ALVO } from './util.mjs';
 
 const SAIDA = process.env.SAIDA || path.resolve('saida-exportacoes');
 fs.mkdirSync(SAIDA, { recursive: true });
@@ -49,16 +49,19 @@ for (const [rotulo, fazer] of passos) {
   await page.waitForTimeout(300);
 }
 
-// Visualizador sem downloads: os botões de exportação não aparecem.
-const sem = await novaPagina(browser, srv.url, { cfg: { seed: seed(), podeEditar: true, semDownloads: true } });
-await aguardarPronto(sem.page);
-const botoesTopo = await sem.page.$$eval('[data-acao="exportar-pdf"],[data-acao="exportar-excel"],[data-acao="menu-exportar"]', b => b.length);
-await sem.page.evaluate(() => window.__mapa.navegar('relatorios', {}));
-await sem.page.waitForTimeout(300);
-const botoesRel = await sem.page.$$eval('[data-acao="rel-executivo"],[data-acao="rel-excel"],[data-acao="rel-ficha"],[data-acao="copia-baixar"]', b => b.length);
-const aviso = await sem.page.$eval('.aviso', a => a.textContent).catch(() => '');
-console.log(`Sem downloads: botões no topo ${botoesTopo}, botões em Relatórios ${botoesRel}, aviso: ${aviso.slice(0, 60)}…`);
+// Visualizador sem downloads (só existe no claude.ai): os botões de exportação não aparecem.
+let sem = { erros: [] };
+if (ALVO !== 'site') {
+  sem = await novaPagina(browser, srv.url, { cfg: { seed: seed(), podeEditar: true, semDownloads: true } });
+  await aguardarPronto(sem.page);
+  const botoesTopo = await sem.page.$$eval('[data-acao="exportar-pdf"],[data-acao="exportar-excel"],[data-acao="menu-exportar"]', b => b.length);
+  await sem.page.evaluate(() => window.__mapa.navegar('relatorios', {}));
+  await sem.page.waitForTimeout(300);
+  const botoesRel = await sem.page.$$eval('[data-acao="rel-executivo"],[data-acao="rel-excel"],[data-acao="rel-ficha"],[data-acao="copia-baixar"]', b => b.length);
+  const aviso = await sem.page.$eval('.aviso', a => a.textContent).catch(() => '');
+  console.log(`Sem downloads: botões no topo ${botoesTopo}, botões em Relatórios ${botoesRel}, aviso: ${aviso.slice(0, 60)}…`);
 
+}
 console.log('erros de console:', erros.length ? erros.join('\n') : 'nenhum', '| sem downloads:', sem.erros.length ? sem.erros.join('\n') : 'nenhum');
 await browser.close();
 srv.fechar();

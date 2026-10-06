@@ -333,7 +333,7 @@ const errosGerais = [];
   const aviso = await page.locator('.aviso.erro').first().innerText().catch(() => '');
   verificar(G, 'Aviso de modo leitura visível na tela', aviso.length > 10, aviso.slice(0, 90));
   verificar(G, 'Nada foi gravado (159 lançamentos)', (await contar(page, 'lancamentos')) === 159);
-  errosGerais.push(...erros.filter(x => !/invalid_argument/.test(x)).map(x => 'recusa: ' + x));
+  errosGerais.push(...erros.filter(x => !/invalid_argument|status of 403/.test(x)).map(x => 'recusa: ' + x));  // a recusa (403) é o próprio cenário
 }
 
 /* ======================= 9. Banco vazio ======================= */
