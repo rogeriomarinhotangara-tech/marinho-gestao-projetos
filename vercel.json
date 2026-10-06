@@ -1,0 +1,23 @@
+{
+  "rewrites": [
+    { "source": "/mapa-cd-simao", "destination": "/simao-distribuidora/mapa-produtividade-cd/site/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/mapa-cd-simao",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/simao-distribuidora/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ]
+}
