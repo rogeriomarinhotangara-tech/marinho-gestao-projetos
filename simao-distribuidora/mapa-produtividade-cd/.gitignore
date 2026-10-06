@@ -1,0 +1,7 @@
+# Dados pessoais dos colaboradores (nomes e produtividade): nunca versionar.
+# A carga é gerada localmente por scripts/gerar_carga.py e gravada no banco privado do artefato.
+carga-inicial/
+*.xlsx
+*.xls
+*.csv
+saida-exportacoes/
