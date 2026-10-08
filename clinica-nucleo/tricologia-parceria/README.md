@@ -16,6 +16,8 @@ Nenhuma planilha é versionada aqui: todas trazem lançamentos com nomes de paci
   calculadora (digita a receita, sai a parte de cada um) e lançamento mensal out/26–set/27.
 - `Conferencia_Tricologia_Sra_Viviane_Abr-Set2026.xlsx` — conferência linha a linha no
   sistema (como está no sistema × como lançamos × colunas de correção), abr–set/2026.
+- `Fechamento_Parceria_Tricologia_Out2026_CZS.xlsx` — outubro/26, primeiro mês com partilha: DRE de
+  Cruzeiro do Sul (05–07/10) fechada, Rio Branco (08/10) pendente, viagem, fatura do cartão e auditoria.
 - Painel: https://claude.ai/artifact/A1RKRD9GzECyje2NBqf4kQ (privado). Sem nomes de pacientes
   e sem detalhe por pessoa em folha, honorários, comissões, consultorias e retiradas.
 
@@ -71,5 +73,6 @@ python3 recalc.py out.xlsx && python3 -I scripts/verify2.py <scratch> out.xlsx
 python3 -I scripts/build_conf.py <scratch> scripts conf.xlsx       # conferência (Sra. Viviane)
 python3 -I scripts/build_calc.py scripts calc.xlsx                  # calculadora e base de cálculo
 python3 -I scripts/build_dash.py <scratch> <scratch>/out/dash2.json  # dados agregados do painel
+python3 -I scripts/build_out.py <scratch> out26.xlsx out26.json   # fechamento de outubro
 python3 -I scripts/build_html.py <scratch>                          # painel (dash_template.html + dados)
 ```

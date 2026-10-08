@@ -294,6 +294,7 @@ tr[data-drill] td:first-child::after{content:" ›";color:var(--accent);font-wei
     </nav>
     <nav class="navgrp" aria-label="Parceria Tricologia">
       <div class="navlbl">Parceria Tricologia</div>
+      <button class="nav" data-mod="outubro"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M9 15l2 2 4-4"/></svg>Outubro/26 · fechamento</button>
       <button class="nav" data-mod="base"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h14M7 13h10M9 18h6"/></svg>Base de cálculo</button>
       <button class="nav" data-mod="estrutura"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l7-6 7 6v11"/><path d="M10 21v-6h4v6"/></svg>Taxa de estrutura</button>
       <button class="nav" data-mod="calc"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h4"/></svg>Calculadora</button>
@@ -400,6 +401,7 @@ const MODS={
  dre:{t:'DRE mensal',p:()=>'Demonstração do resultado de jan a set/2026, por competência (vencimento). Clique em uma linha para abrir as contas no razão.',r:rDre},
  razao:{t:'Razão',p:()=>`Contas que compõem cada linha da DRE. Clique em uma conta para ver os lançamentos de ${MLONG[S.m]}.`,r:rRazao},
  horizontal:{t:'Análise horizontal',p:()=>'As principais contas mês a mês: custos diretos (CMV), despesa trabalhista, despesa operacional e taxa de estrutura.',r:rHz},
+ outubro:{t:'Fechamento de outubro/2026',p:()=>'Primeiro mês com partilha 50/50. Cruzeiro do Sul (05 a 07/10) fechado; Rio Branco (08/10) aguardando o relatório.',r:rOut},
  base:{t:'Base de cálculo da parceria',p:()=>'Como sai do faturamento da tricologia o valor de cada um, e de onde vem cada dedução.',r:rBase},
  estrutura:{t:'Taxa de estrutura',p:()=>'Quanto a clínica gasta para funcionar e qual parte disso a parceria paga.',r:rEst},
  calc:{t:'Calculadora da partilha',p:()=>'Digite o faturamento do mês e veja, passo a passo, quanto fica para cada um.',r:rCalc},
@@ -409,7 +411,7 @@ const MODS={
 const view=document.getElementById('view');
 function go(mod,push=true){if(!MODS[mod])mod='painel';S.mod=mod;document.querySelectorAll('.nav').forEach(b=>b.setAttribute('aria-current',b.dataset.mod===mod?'page':'false'));
   if(push){try{history.replaceState(null,'','#'+mod)}catch(e){}}render();window.scrollTo({top:0})}
-function render(){const M=MODS[S.mod];document.getElementById('t-h').textContent=M.t;document.getElementById('t-p').textContent=M.p();hideTip();view.innerHTML='';M.r(view);bindDrill(view);if(S.drill)renderDrill()}
+function render(){const M=MODS[S.mod];const useM=['painel','dre','razao','horizontal','estrutura'].includes(S.mod);document.getElementById('mes').hidden=!useM;document.querySelector('label[for="mes"]').hidden=!useM;document.getElementById('t-h').textContent=M.t;document.getElementById('t-p').textContent=M.p();hideTip();view.innerHTML='';M.r(view);bindDrill(view);if(S.drill)renderDrill()}
 function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstElementChild}
 function add(parent,html){const e=el(html);parent.appendChild(e);return e}
 
@@ -451,10 +453,11 @@ function rPainel(v){
    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
    <h3>Parceria de Tricologia</h3>
    <p class="note" style="margin:6px 0 10px">A partilha com a Dra. Patrícia começa nas receitas de outubro/2026. Até setembro, a receita da tricologia é 100% da clínica.</p>
+   <div class="li"><span class="d">Outubro · Cruzeiro do Sul (fechado): Dra. Patrícia</span><b>${brl(D.out.d.pat)}</b></div>
    <div class="li"><span class="d">Taxa de estrutura cobrada da parceria</span><b>${pc(EST_PCT,2)}</b></div>
    <div class="li"><span class="d">Impostos e cartão sobre o faturamento</span><b>${pc(S.idx.pis+S.idx.cof+S.idx.iss+S.idx.cart,2)}</b></div>
    <div class="li"><span class="d">Dra. Patrícia, em R$ 100 mil faturados</span><b>${brl0(calcRun({rec:100000,cons:0,ins:'',viag:'',out:'',prej:0,am:'SIM'}).pat)}</b></div>
-   <div style="margin-top:12px"><button class="btn pri" data-go2="base">Ver a base de cálculo</button></div></section>`).querySelector('[data-go2]').addEventListener('click',()=>go('base'));
+   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-go2="outubro">Ver o fechamento de outubro</button><button class="btn" data-go2="base">Ver a base de cálculo</button></div></section>`).querySelectorAll('[data-go2]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go2)));
 }
 
 /* DRE */
@@ -596,6 +599,60 @@ function rBase(v){
   bindDrill(g);
 }
 
+
+/* FECHAMENTO DE OUTUBRO */
+function rOut(v){
+  const O=D.out,d=O.d;S.oOpen=S.oOpen||new Set();
+  add(v,`<div class="banner"><div class="ic">!</div><div><b>Primeiro mês com partilha 50/50.</b> Cruzeiro do Sul (05 a 07/10) está fechado com o relatório de transações: ${O.n} lançamentos, todos da Dra. Patrícia. Rio Branco (08/10) entra quando o relatório chegar; ele já carrega 25% das passagens e da amortização.</div></div>`);
+  const K=[['Faturamento · Cruzeiro do Sul',brl(d.rec),O.n+' lançamentos','rec'],['Resultado · Cruzeiro do Sul',brl(d.res),pc(d.res/d.rec)+' do faturamento','res'],
+    ['Dra. Patrícia · 50%',brl(d.pat),pc(d.pat/d.rec)+' do faturamento','pat'],['Clínica Núcleo S · total',brl(d.clitot),'50% + estrutura + amortização','cli']];
+  const kk=add(v,`<div class="kpis">${K.map(k=>`<button type="button" class="kpi" data-ok="${k[3]}"><span class="k-l">${k[0]}</span><span class="k-v">${k[1]}</span><span class="k-s">${k[2]}</span><span class="k-go">Ver o detalhe ›</span></button>`).join('')}</div>`);
+  const pl=(x,neg)=>`<div class="list">${x.map(i=>`<div class="li"><div><div class="d">${esc(i[0])}</div><div class="m">${i[2]} lançamento(s)</div></div><b class="num">${brl(neg?-i[1]:i[1])}</b></div>`).join('')}</div>`;
+  const passL=`<div class="list">${O.pass_.map(x=>`<div class="li"><div><div class="d">${esc(x[1])}${x[3]?' · '+x[3]:''}</div><div class="m">${x[0]} · fatura do cartão de 05/10</div></div><b class="num">${brl(x[4])}</b></div>`).join('')}
+    <div class="li"><div><div class="d">${esc(O.pass2[1])}</div><div class="m">entra no custo desta viagem (bilhete de R$ 4.320 em 2×)</div></div><b class="num">${brl(O.pass2[4])}</b></div>
+    <div class="li"><b>Total das passagens da viagem</b><b class="num">${brl(O.p_tot)}</b></div>
+    <div class="li"><span class="d">Cruzeiro do Sul: ${pc(O.rat,0)} (3 de 4 dias de atendimento)</span><b class="num">${brl(O.p_tot*O.rat)}</b></div>
+    <div class="li"><span class="d">Rio Branco: ${pc(1-O.rat,0)} (08/10)</span><b class="num">${brl(O.p_tot*(1-O.rat))}</b></div></div>`;
+  const rows=[
+   {k:'R1',l:'Receita — consultas da Dra. Patrícia',v:O.R.R1,det:pl(O.items.R1)+'<p class="note" style="margin-top:6px">5 destas consultas (R$ 2.000) foram emitidas em ago/set e já aparecem na base daqueles meses. A Sra. Viviane vai confirmar se o sistema remarcou ou duplicou.</p>'},
+   {k:'R2',l:'Receita — procedimentos de tricologia',v:O.R.R2,det:pl(O.items.R2)+'<p class="note" style="margin-top:6px">3 pacotes de R$ 11.200 no cartão parcelado (12× e 6×).</p>'},
+   {k:'R3',l:'Receita — facial e corporal da Dra. Patrícia',v:O.R.R3,det:pl(O.items.R3)+'<p class="note" style="margin-top:6px">Entra na partilha enquanto a diretoria mantiver SIM (decisão pendente).</p>'},
+   {k:'rec',t:1,l:'(=) Faturamento da parceria',v:d.rec,det:`<div class="list"><div class="li"><span class="d">PIX e dinheiro (já no caixa)</span><b>${brl(d.vista)}</b></div><div class="li"><span class="d">Cartão à vista (cai em ~30 dias)</span><b>${brl(d.cartvista)}</b></div><div class="li"><span class="d">Cartão parcelado (nov/26 a out/27)</span><b>${brl(d.parc)}</b></div></div>`},
+   {k:'pis',l:'(−) PIS',v:-d.pis,det:`<p class="note">0,65% × ${brl(d.rec)}. Imposto federal sobre o faturamento.</p>`},
+   {k:'cof',l:'(−) COFINS',v:-d.cof,det:`<p class="note">3% × ${brl(d.rec)}. Imposto federal sobre o faturamento.</p>`},
+   {k:'cart',l:'(−) Taxas de cartão e antecipação',v:-d.cart,det:`<p class="note">2,2% × ${brl(d.rec)}, a média da clínica. Taxa real das vendas parceladas deste relatório: ${brl(33600-O.liq_parc)} (${pc((33600-O.liq_parc)/33600,2)}), antes de antecipação.</p>`},
+   {k:'rl',t:1,l:'(=) Receita líquida',v:d.rl},
+   {k:'ins',l:'(−) Insumos e ativos (consumo estimado)',v:-d.ins,det:`<p class="note">Nenhuma compra de material em outubro. O material usado é o estoque comprado em jul–ago, pago 100% pela clínica. Desconto pelo índice de 3,49% do faturamento até a ficha técnica ter os preços das notas.</p>`},
+   {k:'pass',l:'(−) Passagens aéreas (75% da viagem)',v:-d.pass_,det:passL},
+   {k:'loc',l:'(−) Hotel, alimentação e transporte',v:-d.loc,det:'<p class="note">Nenhum comprovante veio no relatório de Cruzeiro do Sul. Se houve, entra aqui.</p>'},
+   {k:'est',l:'(−) Taxa de estrutura da clínica',v:-d.est,det:`<p class="note">${pc(O.ix.est,2)} × ${brl(d.rec)}. A taxa vem de R$ 90.597,90 de estrutura ÷ R$ 490.703,22 de faturamento médio (jul–set). <button class="lnk" data-go3="estrutura">Ver o cálculo →</button></p>`},
+   {k:'eb',t:1,l:'(=) Resultado operacional',v:d.ebitda},
+   {k:'am',l:'(−) Amortização do investimento (parcela 1 de 24)',v:-d.am,det:`<p class="note">${brl(O.ix.amort)} por mês × 75% (3 de 4 dias). Os outros 25% ficam com Rio Branco.</p>`},
+   {k:'ir',l:'(−) IRPJ e CSLL',v:-d.irc,det:`<p class="note">7,68% × ${brl(O.R.R1)} (consultas) + 2,28% × ${brl(O.R.R2+O.R.R3)} (procedimentos).</p>`},
+   {k:'res',t:1,l:'(=) Resultado de Cruzeiro do Sul',v:d.res},
+   {k:'pat',p:1,l:'Dra. Patrícia — 50%',v:d.pat,det:'<p class="note">Repasse até 15/11, contra nota fiscal da empresa dela. O total do mês fecha depois de Rio Branco: se Rio Branco der negativo, compensa aqui.</p>'},
+   {k:'cl',c:1,l:'Clínica Núcleo S — 50%',v:d.cli},
+   {k:'cli',c:1,l:'Clínica Núcleo S — total (50% + estrutura + amortização)',v:d.clitot,det:'<p class="note">A estrutura e a amortização repõem a sala, a equipe, o sistema e os aparelhos que a parceria usou.</p>'}];
+  const c=add(v,`<section class="card" id="o-dre"><div class="card-h"><div><h2>DRE da parceria · Cruzeiro do Sul · 05 a 07/10/2026</h2><p>Clique em qualquer linha para ver de onde vem o número.</p></div></div><div class="tw"><table><thead><tr><th>Linha</th><th>R$</th><th>% do faturamento</th></tr></thead><tbody>
+   ${rows.map(r=>{const op=S.oOpen.has(r.k);const st=r.p?'color:var(--s1);font-weight:700':r.c?'color:var(--s3);font-weight:700':'';
+     return`<tr class="${r.t?'tot':''}" ${r.det?`data-ot="${r.k}" tabindex="0" style="cursor:pointer" aria-expanded="${op}"`:''}><td style="${st}">${esc(r.l)}${r.det?` <span style="color:var(--accent);font-weight:700">${op?'▾':'›'}</span>`:''}</td><td>${brl(r.v)}</td><td>${pc(r.v/d.rec,2)}</td></tr>`+
+       (op&&r.det?`<tr><td colspan="3" class="wrap" style="background:var(--surface-2);text-align:left;position:static">${r.det}</td></tr>`:'')}).join('')}</tbody></table></div></section>`);
+  const tog=k=>{S.oOpen.has(k)?S.oOpen.delete(k):S.oOpen.add(k);const y=window.scrollY;render();window.scrollTo(0,y);const n=view.querySelector(`[data-ot="${k}"]`);if(n)n.focus()};
+  c.querySelectorAll('[data-ot]').forEach(tr=>{tr.addEventListener('click',e=>{if(e.target.closest('[data-go3]'))return;tog(tr.dataset.ot)});tr.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog(tr.dataset.ot)}})});
+  c.querySelectorAll('[data-go3]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go3)));
+  const MAPK={rec:['R1','R2','R3','rec'],res:['res'],pat:['pat'],cli:['cli']};
+  kk.querySelectorAll('[data-ok]').forEach(b=>b.addEventListener('click',()=>{MAPK[b.dataset.ok].forEach(k=>S.oOpen.add(k));render();const t=document.getElementById('o-dre');if(t)t.scrollIntoView({block:'start'})}));
+  const r={rec:d.rec,pis:d.pis,cof:d.cof,iss:d.iss,cart:d.cart,ins:d.ins,viag:d.pass_+d.loc,out:d.out,est:d.est,am:d.am,irc:d.irc,prej:0,base:d.base,pat:d.pat,cli:d.cli};
+  const w=add(v,`<section class="card"><div class="card-h"><div><h2>Do faturamento de Cruzeiro do Sul ao valor de cada um</h2><p>Os mesmos passos da base de cálculo, com os números reais.</p></div></div><div id="o-wf"></div><h3 style="margin:20px 0 8px">De cada R$ 100 faturados em Cruzeiro do Sul</h3>${stack100(r)}</section>`);
+  wf(w.querySelector('#o-wf'),r);
+  add(v,`<div class="grid g2"><section class="card"><div class="card-h"><div><h2>Viagem SP → Cruzeiro do Sul → Rio Branco → SP</h2><p>Passagens pagas no cartão da clínica. A clínica paga e desconta da receita da tricologia.</p></div></div>${passL}</section>
+   <section class="card"><div class="card-h"><div><h2>Rio Branco · 08/10</h2><p>Aguardando o relatório de transações.</p></div><span class="chip warn">! pendente</span></div>
+   <div class="list"><div class="li"><span class="d">Passagens (25% da viagem)</span><b>${brl(O.p_tot*(1-O.rat))}</b></div><div class="li"><span class="d">Amortização (25% da parcela de outubro)</span><b>${brl(O.ix.amort*(1-O.rat))}</b></div>
+   <div class="li"><span class="d">Receitas de 08/10</span><b class="muted">a lançar</b></div></div>
+   <p class="note" style="margin-top:10px">A partilha de outubro soma Cruzeiro do Sul e Rio Branco. Se Rio Branco der negativo, o valor é compensado no total do mês antes do repasse.</p></section></div>`);
+  add(v,`<section class="card"><div class="card-h"><div><h2>Auditoria feita antes da entrega</h2><p>O que foi conferido e o que ainda depende de confirmação.</p></div></div><div class="list">${O.audit.map(a=>{const cl=a[1]==='OK'?'good':a[1]==='PENDENTE'?'warn':'bad';const ic=a[1]==='OK'?'✓':'!';
+    return`<div class="li"><div><div style="font-weight:600">${esc(a[0])}</div><div class="m" style="font-size:12.5px;margin-top:2px">${esc(a[2])}</div></div><span class="chip ${cl}">${ic} ${a[1]==='ATENÇÃO'?'Atenção':a[1]==='PENDENTE'?'Pendente':'OK'}</span></div>`}).join('')}</div></section>`);
+}
 /* TAXA DE ESTRUTURA */
 const WHY={'Pessoal':['Equipe: salários, encargos, benefícios e pró-labore','Entra a equipe de apoio (recepção, enfermagem, limpeza) e seus encargos. Fica de fora: pró-labore, bônus, rescisões e cursos.'],
  'Ocupação e Infraestrutura':['Aluguel, energia, internet, limpeza, segurança e manutenção','Entra tudo: são as salas e a estrutura física que a parceria usa.'],
@@ -680,7 +737,7 @@ function rParc(v){
   add(v,`<div class="banner"><div class="ic">!</div><div><b>Até setembro/2026 a receita da tricologia é 100% da clínica.</b> A partilha 50/50 vale para as receitas a partir de outubro/2026. Os números abaixo mostram a conta aplicada aos meses de teste, sem partilha.</div></div>`);
   add(v,`<section class="card"><h2 style="margin-bottom:6px">Linha do tempo</h2><div class="tl">
    <div><b>abr–jun/26</b>Consultoria de implantação e compra dos aparelhos</div><div><b>jul/26</b>Material inicial (R$ 13,6 mil)</div><div><b>11/08/26</b>Primeiro atendimento da Dra. Patrícia</div>
-   <div><b>ago–set/26</b>Período de teste: 100% da clínica</div><div class="hl"><b>out/26</b>Começa a partilha 50/50</div><div><b>set/28</b>Última parcela da amortização</div></div></section>`);
+   <div><b>ago–set/26</b>Período de teste: 100% da clínica</div><div class="hl"><b>out/26</b>Começa a partilha 50/50: Cruzeiro do Sul 05–07/10, Rio Branco 08/10</div><div><b>set/28</b>Última parcela da amortização</div></div></section>`);
   const rows=[['9','','tri|R1'],['10','','tri|R2'],['11','','tri|R3'],['12','t','tris|R1,R2,R3'],['13'],['14'],['15'],['17','t'],['19','','tri|C1'],['20','t'],['22','','tri|D1'],['24','','tri|D3'],['25','','est'],['26','t'],['28'],['29','t'],['35','c']];
   const lab={'22':'(−) Viagens e estadia da Dra. Patrícia','35':'Resultado que ficou com a clínica (100%)'};
   const rec=P['12'];
@@ -718,7 +775,11 @@ function rRegras(v){
    <li>Transferências entre contas e dinheiro enviado para a conta do sócio</li><li>Multas e juros por atraso da clínica</li><li>Comissões da equipe comercial de outros serviços</li></ul></section></div>`);
   add(v,`<section class="card"><h2 style="margin-bottom:10px">Como funciona todo mês</h2><div class="list">
    ${['Receita da parceria: serviço de tricologia ou "DRA PATRICIA". Despesa: "TRICOLOGIA" ou "PATRICIA" na descrição. O que não estiver marcado não entra.','Fechamento até o dia 10; a Sra. Viviane confere os lançamentos da tricologia no sistema.','Repasse até o dia 15 do mês seguinte, contra nota fiscal da empresa da Dra. Patrícia (conta 2.02.04.002).','Mês negativo não tem partilha: o valor é compensado nos meses seguintes.','Taxa de estrutura revisada a cada 6 meses com a DRE da clínica.','Prestação de contas mensal: DRE da parceria e razão com comprovantes, aberta às duas partes.'].map((t,i)=>`<div class="li"><span class="d">${t}</span><span class="chip neu">${i+1}</span></div>`).join('')}</div></section>`);
-  const PEN=[['Início da partilha: receitas a partir de out/26; jul–set 100% da clínica','good','✓ Decidido'],['Viagens da Dra. Patrícia: a clínica paga e desconta da receita da tricologia','good','✓ Decidido'],
+  const PEN=[['Outubro · Cruzeiro do Sul (05–07/10): fechado, R$ 57.750,00 de faturamento','good','✓ Fechado'],['Outubro · Rio Branco (08/10): aguardando o relatório de transações','warn','! Pendente'],
+   ['5 consultas de R$ 400 emitidas em ago/set aparecem de novo em 05/10 (remarcação ou duplicidade)','warn','! Sra. Viviane'],['Hotel, alimentação e transporte em Cruzeiro do Sul: sem comprovante no relatório','warn','! Localizar'],
+   ['2ª parcela da passagem (R$ 2.160, fatura de nov/26): confirmar','neu','A confirmar'],['Pacotes vendidos em ago/set com sessões feitas a partir de outubro: partilhar ou não','neu','A validar'],
+   ['Insumos sem compra no mês: consumo estimado de 3,49% até a ficha técnica ter os preços das notas','neu','A validar'],
+   ['Início da partilha: receitas a partir de out/26; jul–set 100% da clínica','good','✓ Decidido'],['Viagens da Dra. Patrícia: a clínica paga e desconta da receita da tricologia','good','✓ Decidido'],
    ['Conferência dos lançamentos de abr–set da tricologia no sistema','warn','! Sra. Viviane'],['Passagens, hotel e alimentação das visitas de setembro: não localizados','warn','! Localizar'],
    ['Taxa de estrutura pelo método A (18,46%), revisão semestral','neu','A validar'],['Facial e corporal da Dra. Patrícia entram na parceria?','neu','A validar'],
    ['Investimento: amortizar R$ 61,1 mil em 24× a partir de out/26','neu','A validar'],['Consultoria de tricologia (R$ 40 mil): quem recebeu','neu','A validar'],
