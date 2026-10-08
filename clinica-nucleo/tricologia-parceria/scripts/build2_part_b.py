@@ -85,6 +85,7 @@ par(10,'IRPJ + CSLL presumidos — procedimentos',0.0228,PCT2,'P_IRCS_P','8% × 
 sec(12,'Partilha do resultado')
 par(13,'Participação da Clínica Núcleo',0.5,PCT,'P_CLI','Acordo: 50% / 50% do resultado líquido.')
 par(14,'Participação da Dra. Patrícia',"=1-P_CLI",PCT,'P_PAT','Calculado.',is_input=False)
+par(16,'Mês de início da partilha (AAAAMM)',202610,'0','P_PART_INI','Decisão da diretoria (08/10/2026): só as receitas a partir de out/26 são divididas. Receitas anteriores, inclusive parcelas de cartão de vendas de ago e set que entram depois, são 100% da clínica.')
 par(15,'Procedimentos FACIAL e CORPORAL da Dra. Patrícia entram na parceria? (SIM/NÃO)','SIM',None,'P_FC','Em agosto foram R$ 61,2 mil (39% da receita da parceria). Se entrarem, os produtos usados neles também precisam entrar — hoje não há compra identificada para eles.')
 sec(17,'Taxa de estrutura (parte da despesa fixa da clínica usada pela parceria)')
 par(18,'Método (A = % do faturamento | B = diária de sala)','A',None,'P_MET','A: paga o mesmo % do faturamento que a estrutura custa para a clínica. B: paga a diária da sala nos dias de atendimento.')
@@ -104,7 +105,7 @@ sec(30,'Investimento de implantação (equipamentos + consultoria)')
 par(31,'Amortizar o investimento dentro da DRE da parceria? (SIM/NÃO)','SIM',None,'P_AM_SW','SIM: a clínica recupera o investimento em parcelas antes da partilha (as duas partes arcam). NÃO: a clínica absorve e recupera só pelos 50% dela.')
 dv=DataValidation(type='list',formula1='"SIM,NÃO"',allow_blank=False); ws.add_data_validation(dv); dv.add('B31')
 par(32,'Prazo de amortização (meses)',24,NUM0,'P_AM_PRAZO','')
-par(33,'Mês de início da amortização (AAAAMM)',202608,'0','P_AM_INI','Primeiro mês de atendimento da Dra. Patrícia (11/08/2026).')
+par(33,'Mês de início da amortização (AAAAMM)',202610,'0','P_AM_INI','Começa junto com a partilha (out/26). Antes disso o resultado é 100% da clínica.')
 par(34,'Parcelas contratadas ainda não pagas (R$)',5714.28,NUM,'P_PARC_FUT','7ª parcela da CONSULTORIA TRICOLOGIA (out/26): 7 × R$ 5.714,28 = R$ 40.000.')
 par(35,'Investimento total de implantação (R$)',f"={q('06 Investimento Tricologia')}!$D$10",NUM,'P_INV','Aba 06.',is_input=False)
 par(36,'Amortização mensal (R$)','=IF(P_AM_SW="SIM",P_INV/P_AM_PRAZO,0)',NUM,'P_AM_MES','',is_input=False)
@@ -222,7 +223,7 @@ for n in range(1,37):
 
 # ============================================================ 03 DRE Tricologia
 ws = W['03 DRE Tricologia']; title(ws,'DRE da Tricologia — parceria Clínica Núcleo × Dra. Patrícia Fabrini',
- 'Resultado líquido dividido 50/50 depois de impostos, insumos, despesas diretas, taxa de estrutura e amortização do investimento. Números reais de jul a set/2026.')
+ 'A partilha 50/50 começa nas receitas de OUT/2026. Jul–set/2026 mostram a conta com números reais, mas o resultado desses meses é 100% da clínica (aba 02, início da partilha).')
 for col,w in zip('ABCDEFGH',[60,15,15,15,17,19,12,70]): ws.column_dimensions[col].width=w
 hdr(ws,4,1,['Linha','Jul/26','Ago/26','Set/26','Acumulado jul–set','Cenário (simulação)','% receita (cenário)','Como é calculado'])
 put(ws,5,1,'Competência (AAAAMM)',font=FT_NOTE)
@@ -259,12 +260,13 @@ LINES=[(8,'RECEITA',None,None,'sec',''),
  (28,'(−) IRPJ e CSLL presumidos',lambda c:f'=-({c}9*P_IRCS_C+({c}10+{c}11)*P_IRCS_P)','=-(F9*P_IRCS_C+(F10+F11)*P_IRCS_P)','n','Consultas 7,68%; procedimentos 2,28%'),
  (29,'(=) Resultado líquido do mês',lambda c:f'={c}26+{c}27+{c}28','=F26+F27+F28','t',''),
  (30,'Prejuízo acumulado de meses anteriores',None,'=0','n','Compensado antes de nova partilha'),
- (31,'(=) Base de partilha',lambda c:f'=MAX(0,{c}29+{c}30)','=MAX(0,F29+F30)','t',''),
+ (31,'(=) Base de partilha (só a partir do início da partilha)',lambda c:f'=IF({c}5>=P_PART_INI,MAX(0,{c}29+{c}30),0)','=MAX(0,F29+F30)','t',''),
  (32,'Clínica Núcleo — 50%',lambda c:f'={c}31*P_CLI','=F31*P_CLI','k',''),
  (33,'Dra. Patrícia Fabrini — 50%',lambda c:f'={c}31*P_PAT','=F31*P_PAT','k','Repasse contra NF da PJ dela (conta 2.02.04.002)'),
- (34,'Prejuízo a compensar no mês seguinte',lambda c:f'=MIN(0,{c}29+{c}30)','=MIN(0,F29+F30)','n',''),
+ (34,'Prejuízo a compensar no mês seguinte',lambda c:f'=IF({c}5>=P_PART_INI,MIN(0,{c}29+{c}30),0)','=MIN(0,F29+F30)','n',''),
+ (35,'Resultado antes do início da partilha — 100% da clínica',lambda c:f'=IF({c}5<P_PART_INI,{c}29,0)','=0','k','Até set/26 a receita da tricologia é só da clínica'),
  (36,'LEITURA GERENCIAL',None,None,'sec',''),
- (37,'Retorno total da clínica (50% + taxa de estrutura + amortização)',lambda c:f'={c}32-{c}25-{c}27','=F32-F25-F27','n',''),
+ (37,'Retorno total da clínica (50% + estrutura + amortização + resultado antes do início)',lambda c:f'={c}32-{c}25-{c}27+{c}35','=F32-F25-F27','n',''),
  (38,'Participação da Dra. Patrícia sobre a receita bruta',lambda c:f'=IF({c}12<5000,"–",{c}33/{c}12)','=IFERROR(F33/F12,0)','p',''),
  (39,'Participação da clínica sobre a receita bruta',lambda c:f'=IF({c}12<5000,"–",{c}37/{c}12)','=IFERROR(F37/F12,0)','p',''),
  (40,'Margem líquida da parceria',lambda c:f'=IF({c}12<5000,"–",{c}29/{c}12)','=IFERROR(F29/F12,0)','p',''),
@@ -292,7 +294,7 @@ for (r,lab,fm,fs,kind,note) in LINES:
     put(ws,r,6,fs,fmt=fmt,font=font,fill=fill or F_SUB,border=B_ALL)
     if kind!='p' and fs is not None and r not in (30,34,43,44): put(ws,r,7,f'=IFERROR(F{r}/F$12,0)',fmt=PCT,border=B_ALL)
     put(ws,r,8,note,font=FT_NOTE)
-put(ws,46,1,'Atenção: partilhar sobre o VENDIDO (competência) obriga a clínica a pagar hoje a parte da Dra. Patrícia sobre parcelas de cartão que só vão entrar nos próximos 12 meses. Decisão nº 5 da aba 17.',font=FT_RED)
+put(ws,46,1,'Atenção: partilhar sobre o VENDIDO (competência) obriga a clínica a pagar hoje a parte da Dra. Patrícia sobre parcelas de cartão que só vão entrar nos próximos 12 meses. Decisão nº 6 da aba 17.',font=FT_RED)
 put(ws,47,1,'Cenário = simulação livre com volumes e preços da aba 02. Os números reais estão nas colunas de jul a set.',font=FT_NOTE)
 ws.freeze_panes='B7'
 

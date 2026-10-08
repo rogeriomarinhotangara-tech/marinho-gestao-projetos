@@ -1,0 +1,691 @@
+<title>Controladoria Clínica Núcleo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<style>
+/* Layout: barra lateral de módulos (petróleo) + área de trabalho; cada módulo lê de cima para baixo: resumo, gráfico, detalhe. */
+:root{
+  --bg:#eff3f3; --surface:#ffffff; --surface-2:#f6f9f9; --line:#dbe4e4; --line-2:#c6d2d3;
+  --ink:#10272b; --ink-2:#3d5357; --muted:#687c80;
+  --nav-bg:#0c2a2f; --nav-ink:#d3e3e3; --nav-muted:#86a4a7; --nav-active:#1b4a51; --nav-line:#1a3b41;
+  --accent:#0a6a70; --accent-ink:#ffffff; --accent-soft:#e0eff0;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --n1:#7d8f92; --n2:#c3cdce;
+  --good:#11795a; --good-bg:#e2f3eb; --bad:#bf3a2b; --bad-bg:#fbe8e5; --warn:#94600a; --warn-bg:#fcefd6;
+  --f-display:"Manrope","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0a1517; --surface:#101e21; --surface-2:#142629; --line:#1f3438; --line-2:#2b464b;
+  --ink:#e2eded; --ink-2:#adc1c3; --muted:#7e979a;
+  --nav-bg:#071113; --nav-ink:#d3e3e3; --nav-muted:#6f8f92; --nav-active:#163c42; --nav-line:#14292d;
+  --accent:#3db1ad; --accent-ink:#04282a; --accent-soft:#12363a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --n1:#6b8084; --n2:#35494d;
+  --good:#4ec79b; --good-bg:#10302a; --bad:#f07a6b; --bad-bg:#3a1c19; --warn:#e5a540; --warn-bg:#352812;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1517; --surface:#101e21; --surface-2:#142629; --line:#1f3438; --line-2:#2b464b;
+  --ink:#e2eded; --ink-2:#adc1c3; --muted:#7e979a;
+  --nav-bg:#071113; --nav-ink:#d3e3e3; --nav-muted:#6f8f92; --nav-active:#163c42; --nav-line:#14292d;
+  --accent:#3db1ad; --accent-ink:#04282a; --accent-soft:#12363a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --n1:#6b8084; --n2:#35494d;
+  --good:#4ec79b; --good-bg:#10302a; --bad:#f07a6b; --bad-bg:#3a1c19; --warn:#e5a540; --warn-bg:#352812;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,td,th{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:12px;letter-spacing:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;color:var(--ink)}
+h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:700}
+h3{font-size:14px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100%}
+.side{background:var(--nav-bg);color:var(--nav-ink);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;gap:10px;align-items:center;padding:0 6px}
+.brand-mark{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;color:var(--accent-ink);font-size:15px;flex:none}
+.brand b{font-family:var(--f-display);font-size:15px;display:block;line-height:1.2;color:#fff}
+:root[data-theme="dark"] .brand b{color:var(--nav-ink)}
+.brand span{font-size:11.5px;color:var(--nav-muted)}
+.navgrp{display:flex;flex-direction:column;gap:2px}
+.navlbl{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--nav-muted);padding:0 10px 6px}
+.nav{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--nav-ink);font-size:13.5px}
+.nav:hover{background:var(--nav-line)}
+.nav[aria-current="page"]{background:var(--nav-active);color:#fff;font-weight:600}
+:root[data-theme="dark"] .nav[aria-current="page"]{color:var(--nav-ink)}
+.nav:focus-visible{outline:2px solid var(--accent)}
+.nav svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;opacity:.85}
+.side-foot{margin-top:auto;font-size:11.5px;color:var(--nav-muted);border-top:1px solid var(--nav-line);padding:12px 6px 0;line-height:1.5}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding-block:14px;padding-inline:28px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.top-t{min-width:0}
+.top-t p{color:var(--muted);font-size:13px;margin-top:2px}
+.ctrls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sel,.btn{height:34px;border:1px solid var(--line-2);background:var(--surface);border-radius:8px;padding:0 12px;cursor:pointer}
+.sel{padding-right:8px}
+.btn:hover,.sel:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.lbl{font-size:12px;color:var(--muted)}
+.view{padding-block:24px 48px;padding-inline:28px;display:flex;flex-direction:column;gap:20px;max-width:1440px;width:100%}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.card-h p{color:var(--muted);font-size:13px;margin-top:2px;max-width:70ch}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-73{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .k-l{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.kpi .k-v{font-family:var(--f-display);font-weight:800;font-size:21px;letter-spacing:-.01em;white-space:nowrap}
+.kpi .k-s{font-size:12px;color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.chip.good{background:var(--good-bg);color:var(--good)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.neu{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
+.chip.acc{background:var(--accent-soft);color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{all:unset;cursor:pointer;padding:6px 12px;font-size:12.5px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.note{font-size:12.5px;color:var(--muted)}
+.banner{display:flex;gap:14px;align-items:flex-start;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:var(--r);padding:14px 18px}
+.banner b{color:var(--ink)}
+.banner .ic{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;flex:none;font-family:var(--f-display)}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend i.ln{height:3px;border-radius:2px;width:14px;vertical-align:3px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+.ax text{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+.ax line{stroke:var(--line);stroke-width:1}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:180px;max-width:280px}
+.tip .t-h{font-weight:700;margin-bottom:6px;font-family:var(--f-display)}
+.tip .t-r{display:flex;justify-content:space-between;gap:14px;align-items:center}
+.tip .t-r span:first-child{color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.tip i{display:inline-block;width:8px;height:8px;border-radius:2px}
+
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--ink-2);font-size:12px;background:var(--surface-2);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit;z-index:1}
+tbody tr{background:var(--surface)}
+tbody tr:last-child td{border-bottom:0}
+td.wrap,th.wrap{white-space:normal}
+table.cmp th,table.cmp td{padding:6px 8px;font-size:12.5px}
+table.cmp td:first-child{white-space:normal;min-width:190px;max-width:240px}
+tr.tot td{font-weight:700;background:var(--surface-2)}
+tr.sec td{font-family:var(--f-display);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);background:var(--surface);padding-top:14px}
+tr.grp td{font-weight:700;background:var(--surface-2)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--accent-soft)}
+tr.on td{background:var(--accent-soft)}
+td.cur,th.cur{background:color-mix(in srgb,var(--accent-soft) 70%,transparent)}
+tr.tot td.cur,tr.grp td.cur{background:color-mix(in srgb,var(--accent-soft) 85%,var(--surface-2))}
+.neg{color:var(--bad)}
+.sub{padding-left:22px!important;color:var(--ink-2)}
+.lnk{all:unset;cursor:pointer;color:var(--accent);font-weight:600;font-size:12.5px}
+.lnk:hover{text-decoration:underline}
+.lnk:focus-visible{outline:2px solid var(--accent)}
+
+.hb{display:flex;flex-direction:column;gap:7px}
+.hbr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) auto;grid-template-areas:"l t v";gap:4px 12px;align-items:center;font-size:13px}
+.hb.u .hbr{grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) auto}
+.hbr>.l{grid-area:l;text-align:left}.hbr>.tr{grid-area:t}.hbr>.v{grid-area:v}
+.hb .tr{height:12px;background:var(--surface-2);border-radius:3px;position:relative;overflow:hidden}
+.hb .br{position:absolute;left:0;top:0;bottom:0;border-radius:0 3px 3px 0}
+.hb .v{text-align:right;white-space:nowrap}
+.hb .v small{color:var(--muted);margin-left:6px}
+.stack{display:flex;height:34px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface)}
+.stack div{min-width:2px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden}
+
+.wf{display:flex;flex-direction:column;gap:4px}
+.wfr{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(0,2.4fr) minmax(120px,auto);grid-template-areas:"l t v";gap:2px 14px;align-items:center;font-size:13px}
+.wfr>.l{grid-area:l}.wfr>.tr{grid-area:t}.wfr>.v{grid-area:v}
+.wf .tr{height:22px;position:relative}
+.wf .br{position:absolute;top:2px;bottom:2px;border-radius:3px}
+.wf .v{text-align:right;white-space:nowrap;font-weight:500}
+.wf .t{font-weight:700}
+.wf .grid-l{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--line)}
+
+.steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.step{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--surface);display:flex;flex-direction:column;gap:8px;min-width:0}
+.step-h{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.step-n{width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:13px;flex:none}
+.step-t{flex:1;min-width:0}
+.step-t h3{font-size:14.5px}
+.step-v{text-align:right;white-space:nowrap}
+.step-v b{font-family:var(--f-display);font-size:16px;display:block}
+.step dl{display:grid;grid-template-columns:92px minmax(0,1fr);gap:4px 10px;margin:0;font-size:13px}
+.step dt{color:var(--muted)}
+.step dd{margin:0;color:var(--ink-2)}
+
+.formula{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:var(--f-display)}
+.formula .fx{display:flex;flex-direction:column;gap:2px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;min-width:0}
+.formula .fx small{font-family:var(--f-body);font-size:12px;color:var(--muted)}
+.formula .fx b{font-size:22px;font-weight:800}
+.formula .op{font-size:24px;color:var(--muted);font-weight:700}
+.formula .res{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.formula .res small{color:var(--accent-ink);opacity:.85}
+
+.form{display:grid;gap:10px}
+.fld{display:grid;gap:4px}
+.fld label{font-size:12.5px;color:var(--ink-2);font-weight:500}
+.fld input,.fld select{height:36px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);padding:0 10px;width:100%}
+.fld small{font-size:11.5px;color:var(--muted)}
+.idx{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:6px 10px;align-items:center;font-size:12.5px}
+.idx input{height:30px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 8px;text-align:right;width:100%}
+details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent)}
+.big{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:-.02em;line-height:1.1}
+.out{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.out > div{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--surface-2);min-width:0}
+.out .o-l{font-size:12px;color:var(--muted)}
+.out .o-v{font-family:var(--f-display);font-weight:800;font-size:20px;white-space:nowrap}
+.out .o-p{font-size:12px;color:var(--ink-2)}
+.out .pat{border-color:color-mix(in srgb,var(--s1) 55%,transparent)}
+.out .cli{border-color:color-mix(in srgb,var(--s3) 55%,transparent)}
+
+.list{display:flex;flex-direction:column}
+.li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.li:last-child{border-bottom:0}
+.li .d{color:var(--ink-2)}
+.li .m{font-size:11.5px;color:var(--muted)}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ok-l li,.no-l li{margin:0 0 8px;padding-left:24px;position:relative;list-style:none;font-size:13.5px}
+.ok-l,.no-l{padding:0;margin:0}
+.ok-l li::before{content:"✓";position:absolute;left:0;color:var(--good);font-weight:800}
+.no-l li::before{content:"✕";position:absolute;left:0;color:var(--bad);font-weight:800}
+.tl{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;position:relative;margin-top:6px}
+.tl > div{padding:28px 10px 0 0;position:relative;font-size:12.5px;color:var(--ink-2);min-width:0}
+.tl > div::before{content:"";position:absolute;top:9px;left:0;right:0;height:2px;background:var(--line-2)}
+.tl > div::after{content:"";position:absolute;top:3px;left:0;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--n1)}
+.tl > div.hl::after{background:var(--accent);border-color:var(--accent)}
+.tl b{display:block;color:var(--ink);font-family:var(--f-display);font-size:13px}
+.prog{height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.prog div{height:100%;background:var(--accent)}
+.muted{color:var(--muted)}
+
+@media (max-width:1280px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.g-73,.g3{grid-template-columns:1fr}.steps{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:row;align-items:center;gap:12px;padding:10px 16px;overflow-x:auto}
+  .brand span,.side-foot,.navlbl{display:none}
+  .navgrp{flex-direction:row}
+  .nav{white-space:nowrap;padding:7px 10px}
+  .top{padding-inline:16px}
+  .view{padding-inline:16px}
+  .g2,.cols2,.out{grid-template-columns:1fr}
+  .tl{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}
+}
+@media (max-width:560px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi .k-v{font-size:18px}
+  .wfr,.hb .hbr,.hb.u .hbr{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"l v" "t t"}
+  .formula .fx b{font-size:18px}
+  .tl{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:no-preference){.card,.kpi{transition:border-color .15s}}
+</style>
+
+<div class="app">
+  <aside class="side" aria-label="Módulos">
+    <div class="brand"><div class="brand-mark">N</div><div><b>Clínica Núcleo</b><span>Controladoria · 2026</span></div></div>
+    <nav class="navgrp" aria-label="Clínica">
+      <div class="navlbl">Clínica</div>
+      <button class="nav" data-mod="painel"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Painel</button>
+      <button class="nav" data-mod="dre"><svg viewBox="0 0 24 24"><path d="M5 4h14M5 9h14M5 14h9M5 19h6"/></svg>DRE mensal</button>
+      <button class="nav" data-mod="razao"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16M10 10v9"/></svg>Razão</button>
+      <button class="nav" data-mod="horizontal"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/></svg>Análise horizontal</button>
+    </nav>
+    <nav class="navgrp" aria-label="Parceria Tricologia">
+      <div class="navlbl">Parceria Tricologia</div>
+      <button class="nav" data-mod="base"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h14M7 13h10M9 18h6"/></svg>Base de cálculo</button>
+      <button class="nav" data-mod="estrutura"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l7-6 7 6v11"/><path d="M10 21v-6h4v6"/></svg>Taxa de estrutura</button>
+      <button class="nav" data-mod="calc"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h4"/></svg>Calculadora</button>
+      <button class="nav" data-mod="parceria"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c.8-3 2.7-5 5-5s4.2 2 5 5M11 20c.8-3 2.7-5 5-5s4.2 2 5 5"/></svg>Histórico e investimento</button>
+      <button class="nav" data-mod="regras"><svg viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"/><path d="M5 4h14v16H5z"/></svg>Regras e pendências</button>
+    </nav>
+    <div class="side-foot">Fonte: relatórios de transações jan–set/2026, classificados pelo plano de contas oficial. Competência pelo vencimento. DRE conferida ao centavo com a base.<br>Atualizado em 08/10/2026.</div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div class="top-t"><h1 id="t-h">Painel</h1><p id="t-p"></p></div>
+      <div class="ctrls">
+        <label class="lbl" for="mes">Mês</label>
+        <select id="mes" class="sel"></select>
+        <button id="theme" class="btn" type="button" aria-label="Alternar tema">Tema: sistema</button>
+      </div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+</div>
+<div id="tip" class="tip" hidden></div>
+
+<script>
+const D = /*__DATA__*/null;
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set'];
+const ML=MES.map(m=>m+'/26');
+const MLONG=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro'];
+const nfc=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nf0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+const nf1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const sg=v=>v<0?'−':'';
+const brl=v=>sg(v)+'R$ '+nfc.format(Math.abs(v));
+const brl0=v=>sg(v)+'R$ '+nf0.format(Math.abs(Math.round(v)));
+const n0=v=>Math.abs(v)<0.5?'–':sg(v)+nf0.format(Math.abs(Math.round(v)));
+const kb=v=>{const a=Math.abs(v);if(a>=1e6)return sg(v)+'R$ '+nf1.format(a/1e6)+' mi';if(a>=1e3)return sg(v)+'R$ '+nf1.format(a/1e3)+' mil';return brl0(v)};
+const pc=(v,d=1)=>(isFinite(v)?sg(v)+new Intl.NumberFormat('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(Math.abs(v)*100)+'%':'–');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- dados derivados ---------- */
+const L=k=>D.dre.find(x=>x.k===k);
+const ROB=L('rob').v, ORO=L('oro').v;
+const OPS=D.dre.filter(x=>x.k.startsWith('op_'));
+const recT=i=>ROB[i]+ORO[i];
+const despT=i=>-(L('ded').v[i]+L('cd').v[i]+sum(OPS.map(o=>o.v[i])));
+const grpRaz=g=>D.razao.find(r=>r.g===g);
+const allContas=[];D.razao.forEach(r=>r.contas.forEach(c=>allContas.push(Object.assign({g:r.g,tipo:r.tipo,dre:r.dre},c))));
+const byPre=pres=>i=>sum(allContas.filter(c=>c.tipo==='Despesa'&&pres.some(p=>c.c.startsWith(p))).map(c=>c.v[i]));
+const byGrp=g=>i=>{const r=grpRaz(g);return r?r.v[i]:0};
+const J=[6,7,8]; /* jul–set: período de referência */
+const avgJ=f=>sum(J.map(f))/3;
+const EST_PCT=avgJ(i=>D.est_tot[i])/avgJ(i=>ROB[i]);
+const EST_MES=avgJ(i=>D.est_tot[i]), ROB_MES=avgJ(i=>ROB[i]);
+const P=D.parc.dre;
+
+/* ---------- estado ---------- */
+const S={mod:'painel',m:8,dreMode:'rs',hzMode:'rs',grp:'',q:'',sel:'2.02.01.001',baseRec:100000,
+  calc:{rec:100000,cons:0,ins:'',viag:'',out:'',prej:0,am:'SIM'},
+  idx:{pis:.0065,cof:.03,iss:0,cart:.022,est:EST_PCT,ins:.0349,viag:.0069,out:.0043,amort:61139.78/24,irc:.0768,irp:.0228,pat:.5}};
+
+/* ---------- tooltip ---------- */
+const tip=document.getElementById('tip');
+function showTip(e,html){tip.innerHTML=html;tip.hidden=false;const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px'}
+function hideTip(){tip.hidden=true}
+const trow=(c,l,v)=>`<div class="t-r"><span>${c?`<i style="background:${c}"></i>`:''}${l}</span><b>${v}</b></div>`;
+
+/* ---------- escalas ---------- */
+function nice(min,max,n=4){if(max===min)max=min+1;const raw=(max-min)/n;const p=Math.pow(10,Math.floor(Math.log10(raw)));const f=raw/p;const st=(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;const lo=Math.floor(min/st)*st,hi=Math.ceil(max/st)*st;const t=[];for(let v=lo;v<=hi+st/2;v+=st)t.push(Math.round(v*1e6)/1e6);return{lo,hi,t}}
+function barPath(x,y0,y1,w,r){const top=Math.min(y0,y1),bot=Math.max(y0,y1),h=bot-top;r=Math.min(r,h,w/2);if(h<0.5)return'';
+  if(y1<y0)return`M${x},${bot}V${top+r}Q${x},${top} ${x+r},${top}H${x+w-r}Q${x+w},${top} ${x+w},${top+r}V${bot}Z`;
+  return`M${x},${top}V${bot-r}Q${x},${bot} ${x+r},${bot}H${x+w-r}Q${x+w},${bot} ${x+w},${bot-r}V${top}Z`}
+
+/* gráfico de barras agrupadas + linha (um eixo, R$) */
+function chartBars(el,{labels,bars,line,fmtAxis,tipFn,sel,onPick,height=280,refLine}){
+  const W=Math.max(300,el.clientWidth),H=height,ml=70,mr=10,mt=10,mb=26;
+  const vals=[...bars.flatMap(b=>b.v),...(line?line.v:[]),0,...(refLine?[refLine.v]:[])];
+  const sc=nice(Math.min(...vals),Math.max(...vals));const y=v=>mt+(H-mt-mb)*(1-(v-sc.lo)/(sc.hi-sc.lo));
+  const n=labels.length,bw=(W-ml-mr)/n,gw=Math.min(30,bw*.3);const tot=bars.length*gw+(bars.length-1)*2;
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Gráfico">`;
+  if(sel!=null)s+=`<rect x="${ml+sel*bw+2}" y="${mt}" width="${bw-4}" height="${H-mt-mb}" rx="6" fill="var(--accent-soft)"/>`;
+  s+='<g class="ax">'+sc.t.map(t=>`<line x1="${ml}" x2="${W-mr}" y1="${y(t)}" y2="${y(t)}"${t===0?' style="stroke:var(--line-2)"':''}/><text x="${ml-8}" y="${y(t)+4}" text-anchor="end">${fmtAxis(t)}</text>`).join('')+
+    labels.map((l,i)=>`<text x="${ml+i*bw+bw/2}" y="${H-7}" text-anchor="middle"${i===sel?' style="fill:var(--ink);font-weight:600"':''}>${l}</text>`).join('')+'</g>';
+  bars.forEach((b,j)=>{b.v.forEach((v,i)=>{const x=ml+i*bw+bw/2-tot/2+j*(gw+2);s+=`<path d="${barPath(x,y(0),y(v),gw,4)}" fill="${b.c}"/>`})});
+  if(refLine)s+=`<line x1="${ml}" x2="${W-mr}" y1="${y(refLine.v)}" y2="${y(refLine.v)}" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-mr}" y="${y(refLine.v)-6}" text-anchor="end" style="fill:var(--ink-2);font-size:11px;font-weight:600">${refLine.l}</text>`;
+  if(line){const pts=line.v.map((v,i)=>[ml+i*bw+bw/2,y(v)]);s+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${line.c}" stroke-width="2" stroke-linejoin="round"/>`;
+    pts.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="${line.c}" stroke="var(--surface)" stroke-width="2"/>`)}
+  labels.forEach((l,i)=>s+=`<rect class="hit" data-i="${i}" x="${ml+i*bw}" y="${mt}" width="${bw}" height="${H-mt}" fill="transparent" style="cursor:${onPick?'pointer':'default'}"/>`);
+  s+='</svg>';el.innerHTML=s;
+  el.querySelectorAll('.hit').forEach(r=>{const i=+r.dataset.i;r.addEventListener('mousemove',e=>showTip(e,tipFn(i)));r.addEventListener('mouseleave',hideTip);if(onPick)r.addEventListener('click',()=>{hideTip();onPick(i)})});
+}
+function spark(v,selI,w=96,h=26){const mn=Math.min(...v),mx=Math.max(...v);const sx=i=>2+i*(w-4)/(v.length-1),sy=x=>h-3-(h-6)*((x-mn)/((mx-mn)||1));
+  const pts=v.map((x,i)=>`${sx(i)},${sy(x)}`).join(' ');
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polygon points="${sx(0)},${h-2} ${pts} ${sx(v.length-1)},${h-2}" fill="var(--accent-soft)"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5"/><circle cx="${sx(selI)}" cy="${sy(v[selI])}" r="3" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/></svg>`}
+function delta(cur,prev,upGood){if(prev==null||Math.abs(prev)<1)return'<span class="chip neu">sem base</span>';const d=(cur-prev)/Math.abs(prev);if(Math.abs(d)<0.005)return'<span class="chip neu">= estável</span>';
+  const up=d>0;const good=upGood?up:!up;return`<span class="chip ${good?'good':'bad'}">${up?'▲':'▼'} ${pc(Math.abs(d))}</span>`}
+
+/* ---------- módulos ---------- */
+const MODS={
+ painel:{t:'Painel da clínica',p:()=>`Situação de ${MLONG[S.m]}/2026 comparada ao mês anterior. Clique em um mês no gráfico para trocar.`,r:rPainel},
+ dre:{t:'DRE mensal',p:()=>'Demonstração do resultado de jan a set/2026, por competência (vencimento). Clique em uma linha para abrir as contas no razão.',r:rDre},
+ razao:{t:'Razão',p:()=>`Contas que compõem cada linha da DRE. Clique em uma conta para ver os lançamentos de ${MLONG[S.m]}.`,r:rRazao},
+ horizontal:{t:'Análise horizontal',p:()=>'As principais contas mês a mês: custos diretos (CMV), despesa trabalhista, despesa operacional e taxa de estrutura.',r:rHz},
+ base:{t:'Base de cálculo da parceria',p:()=>'Como sai do faturamento da tricologia o valor de cada um, e de onde vem cada dedução.',r:rBase},
+ estrutura:{t:'Taxa de estrutura',p:()=>'Quanto a clínica gasta para funcionar e qual parte disso a parceria paga.',r:rEst},
+ calc:{t:'Calculadora da partilha',p:()=>'Digite o faturamento do mês e veja, passo a passo, quanto fica para cada um.',r:rCalc},
+ parceria:{t:'Histórico e investimento',p:()=>'O que aconteceu antes da partilha começar e o investimento que a clínica fez.',r:rParc},
+ regras:{t:'Regras e pendências',p:()=>'O que entra e o que não entra na conta, e o que ainda falta decidir ou conferir.',r:rRegras},
+};
+const view=document.getElementById('view');
+function go(mod,push=true){if(!MODS[mod])mod='painel';S.mod=mod;document.querySelectorAll('.nav').forEach(b=>b.setAttribute('aria-current',b.dataset.mod===mod?'page':'false'));
+  if(push){try{history.replaceState(null,'','#'+mod)}catch(e){}}render();window.scrollTo({top:0})}
+function render(){const M=MODS[S.mod];document.getElementById('t-h').textContent=M.t;document.getElementById('t-p').textContent=M.p();hideTip();view.innerHTML='';M.r(view)}
+function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstElementChild}
+function add(parent,html){const e=el(html);parent.appendChild(e);return e}
+
+/* PAINEL */
+function rPainel(v){
+  const m=S.m,p=m>0?m-1:null;
+  const cd=i=>-L('cd').v[i], pes=i=>-L('op_Pessoal').v[i], opx=i=>-sum(OPS.filter(o=>o.k!=='op_Pessoal').map(o=>o.v[i])), eb=i=>L('ebitda').v[i], est=i=>D.est_tot[i]/ROB[i];
+  const K=[
+    ['Receita bruta',kb(ROB[m]),'faturamento do mês',delta(ROB[m],p!=null?ROB[p]:null,true)],
+    ['Custos diretos (CMV)',kb(cd(m)),pc(cd(m)/ROB[m])+' da receita',delta(cd(m),p!=null?cd(p):null,false)],
+    ['Despesa trabalhista',kb(pes(m)),pc(pes(m)/ROB[m])+' da receita',delta(pes(m),p!=null?pes(p):null,false)],
+    ['Despesa operacional',kb(opx(m)),pc(opx(m)/ROB[m])+' da receita',delta(opx(m),p!=null?opx(p):null,false)],
+    ['EBITDA',kb(eb(m)),'margem '+pc(eb(m)/ROB[m]),delta(eb(m),p!=null?eb(p):null,true)],
+    ['Taxa de estrutura',pc(est(m),2),kb(D.est_tot[m])+' de estrutura',`<span class="chip acc">ref. ${pc(EST_PCT,2)}</span>`]];
+  add(v,`<div class="kpis">${K.map(k=>`<div class="kpi"><div class="k-l">${k[0]}</div><div class="k-v">${k[1]}</div><div class="k-s">${k[2]}</div><div>${k[3]}</div></div>`).join('')}</div>`);
+  const c=add(v,`<section class="card"><div class="card-h"><div><h2>Receita, despesas e EBITDA</h2><p>Despesas = impostos sobre o faturamento + custos diretos + pessoal + despesas operacionais. Receita − despesas = EBITDA.</p></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Receita</span><span><i style="background:var(--s2)"></i>Despesas</span><span><i class="ln" style="background:var(--s3)"></i>EBITDA</span></div></div><div class="chart" id="ch1"></div></section>`);
+  chartBars(c.querySelector('#ch1'),{labels:ML,bars:[{c:'var(--s1)',v:ML.map((_,i)=>recT(i))},{c:'var(--s2)',v:ML.map((_,i)=>despT(i))}],line:{c:'var(--s3)',v:ML.map((_,i)=>eb(i))},
+    fmtAxis:t=>t===0?'0':kb(t).replace('R$ ',''),sel:m,onPick:i=>{S.m=i;syncMes();render()},
+    tipFn:i=>`<div class="t-h">${MLONG[i]}/2026</div>${trow('var(--s1)','Receita',brl(recT(i)))}${trow('var(--s2)','Despesas',brl(despT(i)))}${trow('var(--s3)','EBITDA',brl(eb(i)))}${trow('','Margem',pc(eb(i)/ROB[i]))}`});
+  const row=add(v,`<div class="grid g-73"></div>`);
+  const R=recT(m);
+  const parts=[['Impostos sobre o faturamento',-L('ded').v[m],'dre'],['Custos diretos (CMV)',cd(m),'razao:Custos Diretos'],['Pessoal',pes(m),'razao:Pessoal'],
+    ['Aluguel, energia e infraestrutura',-L('op_Ocupação e Infraestrutura').v[m],'razao:Ocupação e Infraestrutura'],['Administrativo e consultorias',-L('op_Administrativo e Profissionais').v[m],'razao:Administrativo e Profissionais'],
+    ['Faturas de cartão sem detalhamento',-L('op_Despesas sem identificação').v[m],'razao:Despesas sem identificação'],['Marketing',-L('op_Marketing').v[m],'razao:Marketing'],
+    ['Tecnologia, taxas, compliance e royalties',-(L('op_Tecnologia').v[m]+L('op_Taxas e Obrigações Regulatórias').v[m]+L('op_Equipamentos e Compliance Clínico').v[m]+L('op_Rateios e Overhead Compartilhado').v[m]+L('op_Comercial e Relacionamento').v[m]),'dre']];
+  const mx=Math.max(...parts.map(x=>x[1]),Math.abs(eb(m)));
+  const a=add(row,`<section class="card"><div class="card-h"><div><h2>Para onde foi a receita em ${MLONG[m]}</h2><p>Cada linha em R$ e em % da receita do mês (${brl0(R)}). Clique para abrir no razão.</p></div></div>
+   <div class="hb">${parts.map(x=>`<div class="hbr"><button class="lnk l" style="color:var(--ink);font-weight:500" data-go="${x[2]}">${x[0]}</button><div class="tr"><div class="br" style="width:${Math.max(0,x[1])/mx*100}%;background:var(--s2)"></div></div><div class="v">${brl0(x[1])}<small>${pc(x[1]/R)}</small></div></div>`).join('')}
+   <div class="hbr"><b class="l" style="font-family:var(--f-display)">EBITDA</b><div class="tr"><div class="br" style="width:${Math.max(0,eb(m))/mx*100}%;background:var(--s3)"></div></div><div class="v"><b>${brl0(eb(m))}</b><small>${pc(eb(m)/R)}</small></div></div></div></section>`);
+  a.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{const [mod,g]=b.dataset.go.split(':');if(g){S.grp=g;S.q=''}go(mod)}));
+  const U=Object.entries(D.uni),um=Math.max(...U.map(u=>u[1][m]));
+  add(row,`<section class="card"><div class="card-h"><div><h2>Receita por unidade</h2><p>${MLONG[m]}/2026</p></div></div>
+   <div class="hb u">${U.map(u=>`<div class="hbr"><span class="l">${u[0]}</span><div class="tr"><div class="br" style="width:${um?u[1][m]/um*100:0}%;background:var(--s1)"></div></div><div class="v">${kb(u[1][m])}<small>${pc(u[1][m]/ROB[m])}</small></div></div>`).join('')}</div>
+   <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+   <h3>Parceria de Tricologia</h3>
+   <p class="note" style="margin:6px 0 10px">A partilha com a Dra. Patrícia começa nas receitas de outubro/2026. Até setembro, a receita da tricologia é 100% da clínica.</p>
+   <div class="li"><span class="d">Taxa de estrutura cobrada da parceria</span><b>${pc(EST_PCT,2)}</b></div>
+   <div class="li"><span class="d">Impostos e cartão sobre o faturamento</span><b>${pc(S.idx.pis+S.idx.cof+S.idx.iss+S.idx.cart,2)}</b></div>
+   <div class="li"><span class="d">Dra. Patrícia, em R$ 100 mil faturados</span><b>${brl0(calcRun({rec:100000,cons:0,ins:'',viag:'',out:'',prej:0,am:'SIM'}).pat)}</b></div>
+   <div style="margin-top:12px"><button class="btn pri" data-go2="base">Ver a base de cálculo</button></div></section>`).querySelector('[data-go2]').addEventListener('click',()=>go('base'));
+}
+
+/* DRE */
+function rDre(v){
+  const m=S.m,pctM=S.dreMode==='av';
+  const c=add(v,`<section class="card"><div class="card-h"><div><h2>Demonstração do resultado — jan a set/2026</h2><p>Valores em R$ (sem centavos). Coluna destacada = ${MLONG[m]}. AV% = participação na receita operacional bruta do mesmo mês.</p></div>
+    <div class="seg" role="group" aria-label="Formato"><button data-md="rs" aria-pressed="${!pctM}">R$</button><button data-md="av" aria-pressed="${pctM}">AV % da receita</button></div></div><div class="tw" id="dt"></div>
+    <p class="note" style="margin-top:10px">Conferência ao centavo, em todos os meses: total de despesas da base = linhas da DRE + saídas fora da DRE. Total de receitas da base = receitas da DRE + entradas fora da DRE.</p></section>`);
+  c.querySelectorAll('[data-md]').forEach(b=>b.addEventListener('click',()=>{S.dreMode=b.dataset.md;render()}));
+  const cell=(x,i)=>pctM?pc(x/ROB[i]):n0(x);
+  let h=`<table><thead><tr><th>Linha</th>${ML.map((l,i)=>`<th class="${i===m?'cur':''}">${l}</th>`).join('')}<th>Acum. jan–set</th><th>AV % ${ML[m]}</th></tr></thead><tbody>`;
+  D.dre.forEach(r=>{const tot=r.t==='t';const lk=r.g&&r.g!=='Deduções da Receita'||r.g==='Deduções da Receita';
+    h+=`<tr class="${tot?'tot':''} ${r.g?'click':''}" ${r.g?`data-g="${esc(r.g)}" tabindex="0" title="Abrir no razão"`:''}><td class="${tot?'':''}">${esc(r.l)}</td>${r.v.map((x,i)=>`<td class="${i===m?'cur':''} ${x<0&&!tot?'':''}">${cell(x,i)}</td>`).join('')}<td>${pctM?pc(sum(r.v)/sum(ROB)):n0(sum(r.v))}</td><td>${pc(r.v[m]/ROB[m])}</td></tr>`});
+  h+=`<tr class="sec"><td colspan="12">Fora da DRE — consome caixa, não é despesa do resultado</td></tr>`;
+  D.fora.forEach(r=>{h+=`<tr class="click" data-g="${esc(r.g)}" tabindex="0"><td>${esc(r.l)}</td>${r.v.map((x,i)=>`<td class="${i===m?'cur':''}">${cell(x,i)}</td>`).join('')}<td>${pctM?pc(sum(r.v)/sum(ROB)):n0(sum(r.v))}</td><td>${pc(r.v[m]/ROB[m])}</td></tr>`});
+  h+='</tbody></table>';const t=c.querySelector('#dt');t.innerHTML=h;
+  t.querySelectorAll('tr[data-g]').forEach(tr=>{const f=()=>{S.grp=tr.dataset.g;S.q='';go('razao')};tr.addEventListener('click',f);tr.addEventListener('keydown',e=>{if(e.key==='Enter')f()})});
+}
+
+/* RAZÃO */
+const GLAB={'Receita Operacional Bruta':'Receita operacional bruta','Outras Receitas Operacionais':'Outras receitas operacionais','Deduções da Receita':'Deduções da receita','Custos Diretos':'Custos diretos (CMV)','Pessoal':'Pessoal (despesa trabalhista)','Despesas sem identificação':'Faturas de cartão sem detalhamento','Contas de Passagem - Não DRE':'Transferências entre contas (fora da DRE)','Investimentos - Não DRE':'Investimentos (fora da DRE)','Financiamentos - Não DRE':'Empréstimos e parcelamentos (fora da DRE)','Patrimônio - Não DRE':'Retiradas de sócio (fora da DRE)'};
+const gl=g=>GLAB[g]||g;
+function rRazao(v){
+  const m=S.m;
+  const c=add(v,`<section class="card"><div class="card-h" style="align-items:flex-end"><div><h2>Contas por grupo da DRE</h2><p>Valores em R$ por mês (sem centavos). Clique em uma conta para ver a composição de ${MLONG[m]} ao lado.</p></div>
+   <div class="ctrls"><div class="fld"><label for="rg">Grupo</label><select id="rg" class="sel"><option value="">Todos os grupos</option>${D.razao.map(r=>`<option value="${esc(r.g)}" ${S.grp===r.g?'selected':''}>${esc(gl(r.g))}</option>`).join('')}</select></div>
+   <div class="fld"><label for="rq">Buscar conta</label><input id="rq" class="sel" style="width:200px;cursor:text" placeholder="nome ou código" value="${esc(S.q)}"></div></div></div>
+   <div class="grid" style="grid-template-columns:minmax(0,1fr)" id="rz"></div></section>`);
+  const rz=c.querySelector('#rz');
+  const wide=window.innerWidth>=1240;if(wide)rz.style.gridTemplateColumns='minmax(0,1fr) 360px';
+  const tw=add(rz,'<div class="tw"></div>'),det=add(rz,'<div class="card" style="padding:16px;align-self:start"></div>');
+  const q=S.q.trim().toLowerCase();
+  let h=`<table><thead><tr><th>Conta</th>${ML.map((l,i)=>`<th class="${i===m?'cur':''}">${l}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  D.razao.filter(r=>!S.grp||r.g===S.grp).forEach(r=>{
+    const cs=r.contas.filter(x=>!q||x.n.toLowerCase().includes(q)||x.c.includes(q));if(!cs.length)return;
+    h+=`<tr class="grp"><td>${esc(gl(r.g))}</td>${r.v.map((x,i)=>`<td class="${i===m?'cur':''}">${n0(x)}</td>`).join('')}<td>${n0(sum(r.v))}</td></tr>`;
+    cs.forEach(x=>{h+=`<tr class="click ${x.c===S.sel?'on':''}" data-c="${x.c}" tabindex="0"><td class="sub"><span class="mono">${x.c}</span> ${esc(x.n)}</td>${x.v.map((y,i)=>`<td class="${i===m?'cur':''}">${n0(y)}</td>`).join('')}<td>${n0(sum(x.v))}</td></tr>`})});
+  h+='</tbody></table>';tw.innerHTML=h;
+  tw.querySelectorAll('tr[data-c]').forEach(tr=>{const f=()=>{S.sel=tr.dataset.c;render()};tr.addEventListener('click',f);tr.addEventListener('keydown',e=>{if(e.key==='Enter')f()})});
+  c.querySelector('#rg').addEventListener('change',e=>{S.grp=e.target.value;render()});
+  const qi=c.querySelector('#rq');qi.addEventListener('input',e=>{S.q=e.target.value;clearTimeout(qi._t);qi._t=setTimeout(()=>{render();const n=document.getElementById('rq');n.focus();n.setSelectionRange(n.value.length,n.value.length)},250)});
+  const x=allContas.find(a=>a.c===S.sel);
+  if(!x){det.innerHTML='<p class="note">Selecione uma conta na tabela.</p>';return}
+  const d=x.d[String(D.meses[m])];
+  let dh=`<div class="mono muted">${x.c}</div><h3 style="margin:2px 0 4px">${esc(x.n)}</h3><p class="note">${esc(gl(x.g))} · ${MLONG[m]}/2026</p>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin:12px 0 6px"><span class="lbl">Total no mês</span><b style="font-family:var(--f-display);font-size:20px">${brl(x.v[m])}</b></div>`;
+  if(!d)dh+='<p class="note">Sem lançamentos nesta conta no mês.</p>';
+  else if(d.mask)dh+=`<p class="note">${d.n} lançamento(s). O detalhe por pessoa não é exibido neste painel (folha, honorários, comissões, consultorias e retiradas). Está na planilha da controladoria.</p>`;
+  else{const mx=Math.max(...d.items.map(i=>Math.abs(i[1])));dh+=`<div class="list">${d.items.map(i=>`<div class="li"><div><div class="d">${esc(i[0])}</div><div class="m">${i[2]} lançamento(s)</div><div class="prog" style="height:5px;margin-top:5px;border:0"><div style="width:${Math.abs(i[1])/mx*100}%;background:${x.tipo==='Receita'?'var(--s1)':'var(--s2)'}"></div></div></div><b class="num">${brl(i[1])}</b></div>`).join('')}</div>
+    <p class="note" style="margin-top:8px">${d.n} lançamento(s) no mês. Parcelas iguais e descrições repetidas aparecem somadas. Receitas mostram o serviço, nunca o nome do paciente.</p>`}
+  det.innerHTML=dh;
+}
+
+/* ANÁLISE HORIZONTAL */
+function rHz(v){
+  const m=S.m,pm=S.hzMode==='pct';
+  const R=[{s:'Receita'},{l:'Receita operacional bruta',f:i=>ROB[i],up:1,b:1},
+   {s:'CMV — custos diretos'},{l:'Custos diretos (total)',f:i=>-L('cd').v[i],b:1},{l:'Medicamentos e ativos',f:byPre(['2.02.01'])},{l:'Honorários médicos e de terceiros',f:byPre(['2.02.04'])},
+   {l:'Antecipação de recebíveis e taxa de cartão',f:byPre(['2.02.07'])},{l:'Insumos e descartáveis',f:byPre(['2.02.02'])},{l:'Comissões',f:byPre(['2.02.08'])},{l:'Viagens de profissional parceiro',f:byPre(['2.02.06'])},
+   {s:'Despesa trabalhista'},{l:'Pessoal (total)',f:i=>-L('op_Pessoal').v[i],b:1},{l:'Salários da equipe',f:byPre(['2.03.01.002'])},{l:'Encargos: INSS, FGTS e férias',f:byPre(['2.03.02'])},
+   {l:'Benefícios: alimentação, seguro, combustível',f:byPre(['2.03.03'])},{l:'Pró-labore',f:byPre(['2.03.01.010'])},{l:'Rescisões',f:byPre(['2.03.05'])},{l:'Bônus, cursos e saúde ocupacional',f:byPre(['2.03.01.015','2.03.04'])},
+   {s:'Despesa operacional'},{l:'Despesa operacional (total, sem pessoal)',f:i=>-sum(OPS.filter(o=>o.k!=='op_Pessoal').map(o=>o.v[i])),b:1},
+   {l:'Aluguel, energia e infraestrutura',f:byGrp('Ocupação e Infraestrutura')},{l:'Administrativo e profissionais',f:byGrp('Administrativo e Profissionais')},{l:'dos quais: consultorias de gestão',f:byPre(['2.09.01.004']),x:1},
+   {l:'Faturas de cartão sem detalhamento',f:byGrp('Despesas sem identificação')},{l:'Marketing',f:byGrp('Marketing')},{l:'Tecnologia',f:byGrp('Tecnologia')},{l:'Alvarás e taxas',f:byGrp('Taxas e Obrigações Regulatórias')},
+   {l:'Biossegurança e compliance',f:byGrp('Equipamentos e Compliance Clínico')},{l:'Royalties',f:byGrp('Rateios e Overhead Compartilhado')},
+   {s:'Taxa de estrutura'},{l:'Estrutura compartilhada (R$)',f:i=>D.est_tot[i],b:1},{l:'Taxa de estrutura (% da receita)',f:i=>D.est_tot[i]/ROB[i],p:1},
+   {s:'Resultado'},{l:'EBITDA',f:i=>L('ebitda').v[i],up:1,b:1},{l:'Margem EBITDA',f:i=>L('ebitda').v[i]/ROB[i],up:1,p:1}];
+  const c=add(v,`<section class="card"><div class="card-h"><div><h2>Comparativo mês a mês das principais contas</h2><p>Δ compara ${MLONG[S.m]} com ${S.m?MLONG[S.m-1]:'o mês anterior'}. Em despesas, ▲ em vermelho é aumento de gasto. Linha do tempo: jan a set/2026, ponto = mês selecionado.</p></div>
+   <div class="seg" role="group" aria-label="Formato"><button data-md="rs" aria-pressed="${!pm}">R$</button><button data-md="pct" aria-pressed="${pm}">% da receita</button></div></div><div class="tw" id="hz"></div></section>`);
+  c.querySelectorAll('[data-md]').forEach(b=>b.addEventListener('click',()=>{S.hzMode=b.dataset.md;render()}));
+  let h=`<table class="cmp"><thead><tr><th>Conta</th><th>Δ ${ML[m]}</th><th style="text-align:left">Jan → set</th>${ML.map((l,i)=>`<th class="${i===m?'cur':''}">${l}</th>`).join('')}<th>Média jul–set</th></tr></thead><tbody>`;
+  R.forEach(r=>{if(r.s){h+=`<tr class="sec"><td colspan="13">${r.s}</td></tr>`;return}
+    const vals=ML.map((_,i)=>r.f(i));const show=(x,i)=>r.p?pc(x):(pm?pc(x/ROB[i]):n0(x));
+    const av=r.p?avgJ(i=>vals[i]):avgJ(i=>vals[i]);
+    h+=`<tr class="${r.b?'tot':''}"><td class="${r.b?'':'sub'}">${esc(r.l)}</td><td>${m?delta(vals[m],vals[m-1],!!r.up):'–'}</td><td style="text-align:left">${spark(vals,m,80,24)}</td>${vals.map((x,i)=>`<td class="${i===m?'cur':''}">${show(x,i)}</td>`).join('')}
+      <td>${r.p?pc(av):(pm?pc(av/avgJ(i=>ROB[i])):n0(av))}</td></tr>`});
+  h+='</tbody></table>';c.querySelector('#hz').innerHTML=h;
+  add(v,`<p class="note">Taxa de estrutura do mês = estrutura compartilhada do mês ÷ receita bruta do mês. A taxa usada na parceria é a média de jul–set (${pc(EST_PCT,2)}), porque um mês isolado oscila com o faturamento. Detalhe no módulo Taxa de estrutura.</p>`);
+}
+
+/* BASE DE CÁLCULO */
+function calcRun(c,ix=S.idx){
+  const rec=+c.rec||0,cons=Math.min(+c.cons||0,rec);
+  const pis=rec*ix.pis,cof=rec*ix.cof,iss=rec*ix.iss,cart=rec*ix.cart;
+  const ins=c.ins===''?rec*ix.ins:+c.ins,viag=c.viag===''?rec*ix.viag:+c.viag,out=c.out===''?rec*ix.out:+c.out;
+  const est=rec*ix.est,am=c.am==='SIM'&&rec>0?ix.amort:0,irc=cons*ix.irc+(rec-cons)*ix.irp;
+  const res=rec-pis-cof-iss-cart-ins-viag-out-est-am-irc;const prej=+c.prej||0;const base=Math.max(0,res-prej);
+  const pat=base*ix.pat,cli=base*(1-ix.pat);
+  return{rec,cons,pis,cof,iss,cart,ins,viag,out,est,am,irc,res,prej,base,pat,cli,cliTot:cli+est+am,carry:Math.max(0,prej-res),insIdx:c.ins==='',viagIdx:c.viag==='',outIdx:c.out===''}}
+function wfRows(r){
+  const rows=[['Faturamento da tricologia',r.rec,'t'],['PIS e COFINS',-(r.pis+r.cof+r.iss),'n'],['Taxas de cartão',-r.cart,'n'],['Insumos e ativos',-r.ins,'n'],['Viagens',-r.viag,'n'],
+   ['Outras despesas diretas',-r.out,'n'],['Taxa de estrutura',-r.est,'e'],['Amortização do investimento',-r.am,'e'],['IRPJ e CSLL',-r.irc,'n']];
+  if(r.prej)rows.push(['Prejuízo anterior',-r.prej,'n']);
+  rows.push(['Resultado a dividir',r.base,'t'],['Dra. Patrícia — 50%',r.pat,'p'],['Clínica Núcleo — 50%',r.cli,'c']);return rows}
+function wf(el,r){
+  const rows=wfRows(r);const mx=r.rec||1;let run=0,h='';
+  rows.forEach(([l,val,k])=>{let a,b,col;
+    if(k==='t'){a=0;b=val;run=val;col='var(--n1)'}else if(k==='p'){a=0;b=val;col='var(--s1)'}else if(k==='c'){a=r.pat;b=r.pat+val;col='var(--s3)'}
+    else{a=run+val;b=run;run+=val;col=k==='e'?'var(--s2)':'var(--n2)'}
+    const L0=Math.max(0,Math.min(a,b))/mx*100,W0=Math.abs(b-a)/mx*100;
+    const bold=k==='t'||k==='p'||k==='c';
+    h+=`<div class="wfr"><span class="l ${bold?'t':''}">${l}</span><div class="tr"><div class="grid-l" style="left:0"></div><div class="grid-l" style="left:100%"></div><div class="br" style="left:${L0}%;width:${Math.max(W0,.4)}%;background:${col}"></div></div><span class="v ${bold?'t':''}">${brl0(val)} <small class="muted">${pc(val/mx)}</small></span></div>`});
+  el.innerHTML=`<div class="wf">${h}</div>`}
+function stack100(r){
+  const parts=[['Impostos e taxas',r.pis+r.cof+r.iss+r.cart+r.irc,'var(--n1)'],['Custos diretos da tricologia',r.ins+r.viag+r.out,'var(--n2)'],['Estrutura e investimento (repõem a clínica)',r.est+r.am,'var(--s2)'],['Partilha da clínica',r.cli,'var(--s3)'],['Partilha da Dra. Patrícia',r.pat,'var(--s1)']];
+  const T=sum(parts.map(p=>p[1]))||1;
+  return`<div class="stack">${parts.map(p=>`<div style="width:${p[1]/T*100}%;background:${p[2]}" title="${p[0]}">${p[1]/T>.07?'R$ '+nf1.format(p[1]/T*100):''}</div>`).join('')}</div>
+   <div class="legend" style="margin-top:10px">${parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]}: <b>R$ ${nf1.format(p[1]/T*100)}</b></span>`).join('')}</div>`}
+function rBase(v){
+  add(v,`<div class="banner"><div class="ic">!</div><div><b>A partilha começa nas receitas de outubro/2026.</b> Até setembro, a receita da tricologia é 100% da clínica, inclusive as parcelas de cartão dessas vendas que entram depois. Os meses de jul–set servem para medir os custos reais e fixar os percentuais abaixo.</div></div>`);
+  const r=calcRun({rec:S.baseRec,cons:0,ins:'',viag:'',out:'',prej:0,am:'SIM'});
+  const top=add(v,`<section class="card"><div class="card-h"><div><h2>Do faturamento ao valor de cada um</h2><p>Exemplo com faturamento só de procedimentos e custos diretos pelos índices médios. No mês real, insumos e viagens entram pelo valor das notas e comprovantes.</p></div>
+   <div class="ctrls"><div class="fld"><label for="brec">Faturamento de exemplo (R$)</label><input id="brec" type="number" min="0" step="1000" value="${S.baseRec}" class="sel" style="width:150px;cursor:text"></div>
+   <div class="seg" role="group" aria-label="Valores prontos">${[50000,100000,150000].map(x=>`<button data-r="${x}" aria-pressed="${S.baseRec===x}">${x/1000} mil</button>`).join('')}</div></div></div>
+   <div class="out" style="margin-bottom:18px"><div class="pat"><div class="o-l">Dra. Patrícia recebe</div><div class="o-v">${brl(r.pat)}</div><div class="o-p">${pc(r.pat/r.rec)} do faturamento</div></div>
+   <div class="cli"><div class="o-l">Clínica fica com (50% + estrutura + investimento)</div><div class="o-v">${brl(r.cliTot)}</div><div class="o-p">${pc(r.cliTot/r.rec)} do faturamento</div></div>
+   <div><div class="o-l">Impostos e custos diretos (saem para terceiros)</div><div class="o-v">${brl(r.rec-r.pat-r.cliTot)}</div><div class="o-p">${pc((r.rec-r.pat-r.cliTot)/r.rec)} do faturamento</div></div></div>
+   <div id="wf"></div>
+   <h3 style="margin:20px 0 8px">De cada R$ 100 faturados</h3>${stack100(r)}</section>`);
+  wf(top.querySelector('#wf'),r);
+  top.querySelectorAll('[data-r]').forEach(b=>b.addEventListener('click',()=>{S.baseRec=+b.dataset.r;render()}));
+  const bi=top.querySelector('#brec');bi.addEventListener('change',()=>{S.baseRec=Math.max(0,+bi.value||0);render()});
+  const st=[
+   ['1','PIS e COFINS',pc(S.idx.pis+S.idx.cof,2)+' do faturamento',r.pis+r.cof,'Impostos federais que a clínica recolhe sobre todo o faturamento, inclusive o da tricologia.','Lei do Lucro Presumido: PIS 0,65% + COFINS 3%. Aparecem na DRE da clínica como deduções da receita.','dre','Ver na DRE'],
+   ['2','Taxas de cartão e antecipação',pc(S.idx.cart,2)+' do faturamento',r.cart,'O que a maquininha e o banco cobram para a clínica receber as vendas no cartão.','Média real da clínica: R$ 60,2 mil de MDR, antecipação e aluguel de maquineta ÷ R$ 2,72 mi faturados em jan–jul/26.','razao:Custos Diretos','Ver no razão'],
+   ['3','Insumos e ativos','valor real das notas',r.ins,'Ativos capilares, seringas, luvas, gazes e pentes usados nos atendimentos dela.','Compras marcadas TRICOLOGIA. Em ago–set foram R$ 6.281,73 (3,49% do faturamento): é o índice do exemplo.','parceria','Ver o histórico'],
+   ['4','Viagens',"valor real dos comprovantes",r.viag,'Passagem aérea, hotel, alimentação e transporte de cada visita.','A clínica paga e desconta da receita da tricologia (regra ajustada em 08/10). Contas 2.02.06.001 a 004. Ago–set em conferência pela Sra. Viviane.','regras','Ver a regra'],
+   ['5','Outras despesas diretas','valor real',r.out,'Recepção e ambientação dos dias de atendimento da tricologia.','Despesas marcadas TRICOLOGIA ou PATRICIA na descrição.','parceria','Ver o histórico'],
+   ['6','Taxa de estrutura da clínica',pc(S.idx.est,2)+' do faturamento',r.est,'A parte do custo fixo que todo atendimento usa: sala, equipe de apoio, recepção, energia, sistema, limpeza, contabilidade.',`Estrutura compartilhada média de jul–set (${brl(EST_MES)}) ÷ faturamento médio da clínica (${brl(ROB_MES)}).`,'estrutura','Ver o cálculo'],
+   ['7','Amortização do investimento',brl(S.idx.amort)+' por mês',r.am,'Devolve à clínica os aparelhos e a consultoria de implantação, que ela pagou sozinha.','R$ 61.139,78 ÷ 24 meses, de out/26 a set/28. Os aparelhos continuam da clínica.','parceria','Ver o investimento'],
+   ['8','IRPJ e CSLL',pc(S.idx.irp,2)+' (procedimentos) · '+pc(S.idx.irc,2)+' (consultas)',r.irc,'Impostos sobre o lucro, calculados sobre o faturamento.','Lucro Presumido: 8% × 15% + 12% × 9% nos procedimentos; 32% × 24% nas consultas. Confirmar com a contabilidade.','dre','Ver na DRE'],
+   ['9','Partilha 50/50','50% para cada',r.pat,'O que sobra depois dos passos 1 a 8 é dividido meio a meio.','Mês negativo não tem partilha: o valor é compensado no mês seguinte. Pagamento à PJ dela, contra nota fiscal, até o dia 15.','calc','Simular um mês']];
+  const g=add(v,`<section class="card"><div class="card-h"><div><h2>De onde vem cada dedução</h2><p>Os mesmos passos da calculadora, na ordem, com o valor do exemplo de ${brl0(S.baseRec)}.</p></div></div><div class="steps"></div></section>`).querySelector('.steps');
+  st.forEach(s=>{const e=add(g,`<article class="step"><div class="step-h"><div class="step-n">${s[0]}</div><div class="step-t"><h3>${s[1]}</h3><span class="chip acc" style="margin-top:4px">${s[2]}</span></div><div class="step-v"><span class="lbl">no exemplo</span><b>${s[0]==='9'?brl0(s[3])+' cada':'− '+brl0(s[3])}</b></div></div>
+   <dl><dt>O que é</dt><dd>${s[4]}</dd><dt>De onde vem</dt><dd>${s[5]}</dd></dl><div><button class="lnk" data-go="${s[6]}">${s[7]} →</button></div></article>`);
+   e.querySelector('[data-go]').addEventListener('click',ev=>{const [mod,gg]=ev.target.dataset.go.split(':');if(gg){S.grp=gg;S.q='';S.sel='2.02.07.008'}go(mod)})});
+}
+
+/* TAXA DE ESTRUTURA */
+const WHY={'Pessoal':['Equipe: salários, encargos, benefícios e pró-labore','Entra a equipe de apoio (recepção, enfermagem, limpeza) e seus encargos. Fica de fora: pró-labore, bônus, rescisões e cursos.'],
+ 'Ocupação e Infraestrutura':['Aluguel, energia, internet, limpeza, segurança e manutenção','Entra tudo: são as salas e a estrutura física que a parceria usa.'],
+ 'Administrativo e Profissionais':['Contabilidade, jurídico, escritório e consultorias de gestão','Entra contabilidade, jurídico, escritório e copa. Fica de fora: consultorias e mentorias de gestão da clínica.'],
+ 'Tecnologia':['Sistema de gestão e informática','Entra tudo: agenda, prontuário e financeiro rodam no mesmo sistema.'],
+ 'Taxas e Obrigações Regulatórias':['Alvarás e taxas de funcionamento','Entra tudo: a clínica só funciona com eles.'],
+ 'Equipamentos e Compliance Clínico':['Biossegurança, resíduos e manutenção de aparelhos','Entra coleta de resíduos e biossegurança. Fica de fora: manutenção de aparelhos de outros serviços.'],
+ 'Despesas Financeiras':['Tarifas bancárias e maquineta','Entra tarifa e aluguel de maquineta. Fica de fora: juros e IOF.'],
+ 'Custos Diretos':['Medicamentos, insumos, honorários e comissões dos outros serviços','Não entra: são custos do emagrecimento, implantes e injetáveis. A tricologia paga só os insumos dela.'],
+ 'Despesas sem identificação':['Faturas de cartão sem detalhamento','Não entra: não se cobra do parceiro despesa sem comprovante.'],
+ 'Deduções da Receita':['Impostos sobre o faturamento da clínica','Não entra aqui: a tricologia paga os impostos sobre o próprio faturamento (passo 1).'],
+ 'Marketing':['Marketing institucional','Não entra. Campanha própria da tricologia entra 100% nela, se aprovada pelos dois.'],
+ 'Rateios e Overhead Compartilhado':['Royalties de outro procedimento','Não entra.'],'Tributos sobre Lucro':['IRPJ e CSLL da clínica','Não entra aqui: a tricologia paga os dela (passo 8).']};
+function rEst(v){
+  const rows=D.razao.filter(r=>r.tipo==='Despesa'&&r.dre).map(r=>({g:r.g,tot:avgJ(i=>r.v[i]),ent:avgJ(i=>sum(r.contas.map(c=>c.est[i])))})).filter(r=>r.tot>0.5).sort((a,b)=>(b.ent-a.ent)||(b.tot-a.tot));
+  const T=sum(rows.map(r=>r.tot)),E=sum(rows.map(r=>r.ent));
+  add(v,`<section class="card"><div class="card-h"><div><h2>Como os ${pc(EST_PCT,2)} são calculados</h2><p>Média mensal de jul–set/2026, o período com a estrutura atual das três unidades.</p></div></div>
+   <div class="formula"><div class="fx"><small>Estrutura compartilhada por mês</small><b>${brl(EST_MES)}</b></div><div class="op">÷</div><div class="fx"><small>Faturamento médio da clínica</small><b>${brl(ROB_MES)}</b></div><div class="op">=</div><div class="fx res"><small>Taxa de estrutura</small><b>${pc(EST_PCT,2)}</b></div></div>
+   <p style="margin-top:14px;max-width:80ch">Para cada R$ 100 que a clínica fatura, ela gasta ${brl(EST_PCT*100)} com a estrutura que qualquer atendimento usa. A tricologia paga a mesma proporção sobre o que ela fatura. Em um mês de R$ 100 mil, são ${brl0(EST_PCT*100000)}.</p></section>`);
+  const c=add(v,`<section class="card"><div class="card-h"><div><h2>A clínica gasta ${kb(T)} por mês para funcionar</h2><p>${pc(T/ROB_MES)} do faturamento. Só a parte em laranja, a estrutura que todo atendimento usa, entra na taxa da parceria. O resto fica 100% com a clínica.</p></div></div>
+   <div class="stack" style="height:40px"><div style="width:${E/T*100}%;background:var(--s2)">Entra na taxa: ${kb(E)}</div><div style="width:${(T-E)/T*100}%;background:var(--n2);color:var(--ink)">Fica 100% com a clínica: ${kb(T-E)}</div></div>
+   <div class="tw" style="margin-top:16px"><table><thead><tr><th>Despesa da clínica (média por mês)</th><th>R$ por mês</th><th>% do faturamento</th><th>Entra na taxa</th><th>Fica com a clínica</th><th class="wrap" style="text-align:left;min-width:280px">Por quê</th></tr></thead><tbody>
+   ${rows.map(r=>{const w=WHY[r.g]||[r.g,''];return`<tr><td class="wrap" style="min-width:220px">${esc(w[0])}</td><td>${n0(r.tot)}</td><td>${pc(r.tot/ROB_MES)}</td><td style="${r.ent>0.5?'color:var(--s2);font-weight:600':''}">${n0(r.ent)}</td><td>${n0(r.tot-r.ent)}</td><td class="wrap" style="text-align:left;color:var(--ink-2);font-size:12.5px">${esc(w[1])}</td></tr>`}).join('')}
+   <tr class="tot"><td>Total</td><td>${n0(T)}</td><td>${pc(T/ROB_MES)}</td><td>${n0(E)}</td><td>${n0(T-E)}</td><td></td></tr>
+   <tr class="tot"><td>% do faturamento</td><td></td><td></td><td style="color:var(--s2)">${pc(E/ROB_MES,2)}</td><td>${pc((T-E)/ROB_MES,2)}</td><td class="wrap" style="text-align:left">← a taxa de estrutura</td></tr></tbody></table></div>
+   <p class="note" style="margin-top:10px">Não são despesa do resultado e ficam fora desta conta: retiradas dos sócios, empréstimos e compra de equipamentos.</p></section>`);
+  const ch=add(v,`<section class="card"><div class="card-h"><div><h2>Taxa de estrutura mês a mês</h2><p>Estrutura do mês ÷ receita bruta do mês. Oscila com o faturamento: por isso a parceria usa a média de jul–set, revisada a cada 6 meses.</p></div><div class="legend"><span><i style="background:var(--s1)"></i>Taxa do mês</span><span><i class="ln" style="background:var(--ink-2)"></i>Média jul–set</span></div></div><div class="chart" id="ch2"></div></section>`);
+  chartBars(ch.querySelector('#ch2'),{labels:ML,bars:[{c:'var(--s1)',v:ML.map((_,i)=>D.est_tot[i]/ROB[i])}],fmtAxis:t=>pc(t,0),sel:S.m,height:240,refLine:{v:EST_PCT,l:'média jul–set '+pc(EST_PCT,2)},
+    onPick:i=>{S.m=i;syncMes();render()},tipFn:i=>`<div class="t-h">${MLONG[i]}/2026</div>${trow('var(--s1)','Taxa do mês',pc(D.est_tot[i]/ROB[i],2))}${trow('','Estrutura',brl(D.est_tot[i]))}${trow('','Receita bruta',brl(ROB[i]))}`});
+  const EG=Object.entries(D.est_g).map(([g,vv])=>({g,v:vv})).sort((a,b)=>sum(b.v)-sum(a.v));
+  add(v,`<section class="card"><div class="card-h"><div><h2>Composição da estrutura compartilhada</h2><p>Só as contas que entram na taxa, em R$ por mês.</p></div></div><div class="tw"><table class="cmp"><thead><tr><th>Grupo</th>${ML.map((l,i)=>`<th class="${i===S.m?'cur':''}">${l}</th>`).join('')}<th>Média jul–set</th></tr></thead><tbody>
+   ${EG.map(e=>`<tr><td>${esc((WHY[e.g]||[e.g])[0])}</td>${e.v.map((x,i)=>`<td class="${i===S.m?'cur':''}">${n0(x)}</td>`).join('')}<td>${n0(avgJ(i=>e.v[i]))}</td></tr>`).join('')}
+   <tr class="tot"><td>Estrutura compartilhada</td>${D.est_tot.map((x,i)=>`<td class="${i===S.m?'cur':''}">${n0(x)}</td>`).join('')}<td>${n0(EST_MES)}</td></tr>
+   <tr><td>Receita bruta</td>${ROB.map((x,i)=>`<td class="${i===S.m?'cur':''}">${n0(x)}</td>`).join('')}<td>${n0(ROB_MES)}</td></tr>
+   <tr class="tot"><td>Taxa do mês</td>${ROB.map((x,i)=>`<td class="${i===S.m?'cur':''}">${pc(D.est_tot[i]/x,2)}</td>`).join('')}<td>${pc(EST_PCT,2)}</td></tr></tbody></table></div>
+   <p class="note" style="margin-top:10px">Outra forma de cobrar (método B): diária de sala. Com 7 salas em Rio Branco e 22 dias úteis, a diária sairia ${brl(EST_MES/(7*22))}, mas fica superestimada até informarmos as salas de Cruzeiro do Sul e Epitaciolândia. Por isso a proposta é o método A, o percentual.</p></section>`);
+}
+
+/* CALCULADORA */
+function rCalc(v){
+  const c=S.calc,r=calcRun(c),ix=S.idx;
+  const box=add(v,`<div class="grid" style="grid-template-columns:minmax(0,340px) minmax(0,1fr)" id="cg"></div>`);
+  if(window.innerWidth<1000)box.style.gridTemplateColumns='1fr';
+  const f=add(box,`<section class="card"><h2 style="margin-bottom:12px">Dados do mês</h2><form class="form" id="cf">
+   <div class="fld"><label for="c-rec">Faturamento da parceria no mês (R$)</label><input id="c-rec" type="number" min="0" step="100" value="${c.rec}"><small>Consultas + procedimentos da Dra. Patrícia.</small></div>
+   <div class="fld"><label for="c-cons">dos quais: consultas (R$)</label><input id="c-cons" type="number" min="0" step="100" value="${c.cons}"><small>Consulta paga IRPJ/CSLL maior (7,68%). Se não souber, deixe zero.</small></div>
+   <div class="fld"><label for="c-ins">Insumos do mês (R$)</label><input id="c-ins" type="number" min="0" step="10" value="${c.ins}" placeholder="vazio = ${pc(ix.ins,2)} do faturamento"></div>
+   <div class="fld"><label for="c-viag">Viagens: passagem, hotel, alimentação (R$)</label><input id="c-viag" type="number" min="0" step="10" value="${c.viag}" placeholder="vazio = ${pc(ix.viag,2)} do faturamento"></div>
+   <div class="fld"><label for="c-out">Outras despesas diretas (R$)</label><input id="c-out" type="number" min="0" step="10" value="${c.out}" placeholder="vazio = ${pc(ix.out,2)} do faturamento"></div>
+   <div class="fld"><label for="c-prej">Prejuízo de meses anteriores (R$)</label><input id="c-prej" type="number" min="0" step="10" value="${c.prej}"></div>
+   <div class="fld"><label for="c-am">Descontar a amortização do investimento?</label><select id="c-am"><option ${c.am==='SIM'?'selected':''}>SIM</option><option ${c.am==='NÃO'?'selected':''}>NÃO</option></select><small>SIM por 24 meses, de out/26 a set/28.</small></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="c-ex">Exemplo R$ 100 mil</button><button type="button" class="btn" id="c-cl">Limpar</button></div>
+   <details style="margin-top:6px"><summary>Índices usados (editáveis)</summary><div class="idx" style="margin-top:10px">
+   ${[['pis','PIS (%)'],['cof','COFINS (%)'],['iss','ISS (%)'],['cart','Cartão e antecipação (%)'],['est','Taxa de estrutura (%)'],['ins','Insumos, quando vazio (%)'],['viag','Viagens, quando vazio (%)'],['out','Outras diretas, quando vazio (%)'],['irp','IRPJ+CSLL procedimentos (%)'],['irc','IRPJ+CSLL consultas (%)'],['pat','Parte da Dra. Patrícia (%)']].map(([k,l])=>`<label for="i-${k}">${l}</label><input id="i-${k}" data-ix="${k}" type="number" step="0.01" value="${+(ix[k]*100).toFixed(4)}">`).join('')}
+   <label for="i-amort">Amortização mensal (R$)</label><input id="i-amort" data-ix="amort" type="number" step="0.01" value="${ix.amort.toFixed(2)}"></div>
+   <button type="button" class="btn" id="i-rs" style="margin-top:10px">Voltar aos índices padrão</button></details></form></section>`);
+  const o=add(box,`<section class="card"><div class="out" style="margin-bottom:16px"><div class="pat"><div class="o-l">Dra. Patrícia recebe</div><div class="o-v">${brl(r.pat)}</div><div class="o-p">${r.rec?pc(r.pat/r.rec):'–'} do faturamento</div></div>
+   <div class="cli"><div class="o-l">Clínica — total</div><div class="o-v">${brl(r.cliTot)}</div><div class="o-p">50% + estrutura + investimento</div></div>
+   <div><div class="o-l">${r.carry>0?'Prejuízo para o mês seguinte':'Resultado a dividir'}</div><div class="o-v">${brl(r.carry>0?r.carry:r.base)}</div><div class="o-p">${r.carry>0?'não há partilha neste mês':'base da partilha 50/50'}</div></div></div>
+   <div class="tw"><table><thead><tr><th>Passo</th><th>R$</th><th>% do faturamento</th><th class="wrap" style="text-align:left">Como é calculado</th></tr></thead><tbody>
+   ${[['Faturamento da parceria',r.rec,'Valor digitado','t'],['(−) PIS',-r.pis,`${pc(ix.pis,2)} do faturamento`],['(−) COFINS',-r.cof,`${pc(ix.cof,2)} do faturamento`],['(−) ISS',-r.iss,`${pc(ix.iss,2)} (ISS fixo anual: zero no mês)`],
+      ['(−) Taxas de cartão e antecipação',-r.cart,`${pc(ix.cart,2)} do faturamento`],['(=) Receita líquida',r.rec-r.pis-r.cof-r.iss-r.cart,'','t'],
+      ['(−) Insumos e ativos',-r.ins,r.insIdx?`índice ${pc(ix.ins,2)} (sem valor digitado)`:'valor digitado'],['(−) Viagens e estadia',-r.viag,r.viagIdx?`índice ${pc(ix.viag,2)} (sem valor digitado)`:'valor digitado'],
+      ['(−) Outras despesas diretas',-r.out,r.outIdx?`índice ${pc(ix.out,2)} (sem valor digitado)`:'valor digitado'],['(−) Taxa de estrutura da clínica',-r.est,`${pc(ix.est,2)} do faturamento`],
+      ['(−) Amortização do investimento',-r.am,c.am==='SIM'?'parcela fixa mensal':'não descontada'],['(−) IRPJ e CSLL',-r.irc,`${pc(ix.irc,2)} das consultas + ${pc(ix.irp,2)} dos procedimentos`],
+      ['(=) Resultado do mês',r.res,'','t'],['(−) Prejuízo anterior',-r.prej,'compensação'],['(=) Base de partilha',r.base,'se negativo, zero','t'],
+      ['Dra. Patrícia',r.pat,pc(ix.pat,0)+' da base','p'],['Clínica Núcleo',r.cli,pc(1-ix.pat,0)+' da base','c'],['Clínica — total (50% + estrutura + amortização)',r.cliTot,'o que fica com a clínica','c']]
+     .map(x=>`<tr class="${x[3]==='t'?'tot':''}"><td style="${x[3]==='p'?'color:var(--s1);font-weight:700':x[3]==='c'?'color:var(--s3);font-weight:700':''}">${x[0]}</td><td>${brl(x[1])}</td><td>${r.rec?pc(x[1]/r.rec,2):'–'}</td><td class="wrap" style="text-align:left;color:var(--ink-2)">${x[2]}</td></tr>`).join('')}
+   </tbody></table></div><h3 style="margin:18px 0 8px">De cada R$ 100 faturados</h3>${r.rec?stack100(r):'<p class="note">Digite um faturamento.</p>'}</section>`);
+  const set=(k,val)=>{S.calc[k]=val;render();const n=document.getElementById('c-'+k);if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}};
+  ['rec','cons','ins','viag','out','prej'].forEach(k=>{const n=f.querySelector('#c-'+k);n.addEventListener('change',()=>set(k,['ins','viag','out'].includes(k)&&n.value===''?'':Math.max(0,+n.value||0)))});
+  f.querySelector('#c-am').addEventListener('change',e=>set('am',e.target.value));
+  f.querySelector('#c-ex').addEventListener('click',()=>{S.calc={rec:100000,cons:0,ins:'',viag:'',out:'',prej:0,am:'SIM'};render()});
+  f.querySelector('#c-cl').addEventListener('click',()=>{S.calc={rec:0,cons:0,ins:'',viag:'',out:'',prej:0,am:'SIM'};render()});
+  f.querySelectorAll('[data-ix]').forEach(n=>n.addEventListener('change',()=>{const k=n.dataset.ix;S.idx[k]=k==='amort'?Math.max(0,+n.value||0):Math.max(0,+n.value||0)/100;render();const d=document.querySelector('details');if(d)d.open=true}));
+  f.querySelector('#i-rs').addEventListener('click',()=>{S.idx={pis:.0065,cof:.03,iss:0,cart:.022,est:EST_PCT,ins:.0349,viag:.0069,out:.0043,amort:61139.78/24,irc:.0768,irp:.0228,pat:.5};render()});
+  f.querySelector('#cf').addEventListener('submit',e=>e.preventDefault());
+}
+
+/* HISTÓRICO E INVESTIMENTO */
+function rParc(v){
+  add(v,`<div class="banner"><div class="ic">!</div><div><b>Até setembro/2026 a receita da tricologia é 100% da clínica.</b> A partilha 50/50 vale para as receitas a partir de outubro/2026. Os números abaixo mostram a conta aplicada aos meses de teste, sem partilha.</div></div>`);
+  add(v,`<section class="card"><h2 style="margin-bottom:6px">Linha do tempo</h2><div class="tl">
+   <div><b>abr–jun/26</b>Consultoria de implantação e compra dos aparelhos</div><div><b>jul/26</b>Material inicial (R$ 13,6 mil)</div><div><b>11/08/26</b>Primeiro atendimento da Dra. Patrícia</div>
+   <div><b>ago–set/26</b>Período de teste: 100% da clínica</div><div class="hl"><b>out/26</b>Começa a partilha 50/50</div><div><b>set/28</b>Última parcela da amortização</div></div></section>`);
+  const rows=[['9'],['10'],['11'],['12','t'],['13'],['14'],['15'],['17','t'],['19'],['20','t'],['22'],['24'],['25'],['26','t'],['28'],['29','t'],['35','c']];
+  const lab={'22':'(−) Viagens e estadia da Dra. Patrícia','35':'Resultado que ficou com a clínica (100%)'};
+  const rec=P['12'];
+  add(v,`<section class="card"><div class="card-h"><div><h2>A conta aplicada aos meses de teste — jul a set/2026</h2><p>Números reais da base. Amortização zero: começa em out/26. Viagens de setembro ainda em conferência pela Sra. Viviane.</p></div></div>
+   <div class="tw"><table><thead><tr><th>Linha</th><th>jul/26</th><th>ago/26</th><th>set/26</th><th>Acum. jul–set</th><th>% da receita</th></tr></thead><tbody>
+   ${rows.map(([k,t])=>{const r=P[k];if(!r)return'';return`<tr class="${t==='t'?'tot':''}"><td style="${t==='c'?'color:var(--s3);font-weight:700':''}">${esc(lab[k]||r[0])}</td>${r.slice(1,5).map(x=>`<td>${n0(x)}</td>`).join('')}<td>${pc(r[4]/rec[4])}</td></tr>`}).join('')}
+   </tbody></table></div>
+   <div class="grid g3" style="margin-top:16px">
+    <div class="kpi"><div class="k-l">Insumos sobre o faturamento (ago–set)</div><div class="k-v">${pc(6281.73/179877,2)}</div><div class="k-s">R$ 6.281,73 ÷ R$ 179.877. Julho foi a compra inicial de material.</div></div>
+    <div class="kpi"><div class="k-l">Viagens sobre o faturamento (ago–set)</div><div class="k-v">${pc(1240/179877,2)}</div><div class="k-s"><span class="chip warn">! em conferência</span> Só hotel e refeições de agosto estão lançados.</div></div>
+    <div class="kpi"><div class="k-l">Vendas em cartão parcelado</div><div class="k-v">${kb(P['41'][4])}</div><div class="k-s">${pc(P['41'][4]/rec[4])} do faturamento. As parcelas dessas vendas são 100% da clínica.</div></div></div></section>`);
+  add(v,`<section class="card"><div class="card-h"><div><h2>Investimento de implantação</h2><p>Pago 100% pela clínica antes do primeiro atendimento. Volta em 24 parcelas mensais dentro da conta da parceria.</p></div><span class="chip warn">! a validar</span></div>
+   <div class="grid g2"><div class="list">
+    <div class="li"><span class="d">Aparelhos (eletroporação, LED, câmera, microscópio), líquidos do estorno</span><b>${brl(21139.82)}</b></div>
+    <div class="li"><span class="d">Consultoria de implantação: 6 parcelas pagas (abr–set)</span><b>${brl(34285.68)}</b></div>
+    <div class="li"><span class="d">Consultoria de implantação: 7ª parcela (out/26)</span><b>${brl(5714.28)}</b></div>
+    <div class="li"><span class="d"><b>Investimento total</b></span><b>${brl(61139.78)}</b></div>
+    <div class="li"><span class="d">Amortização: 24 × de out/26 a set/28</span><b>${brl(61139.78/24)} por mês</b></div></div>
+   <div><p class="lbl" style="margin-bottom:6px">Parcelas recuperadas: 0 de 24</p><div class="prog"><div style="width:0%"></div></div>
+    <p class="note" style="margin-top:12px">Como a amortização entra antes da divisão, cada parte arca com metade: ${brl(61139.78/2)} para a Dra. Patrícia e ${brl(61139.78/2)} para a clínica. Os aparelhos continuam patrimônio da clínica.</p>
+    <p class="note" style="margin-top:8px">Ponto para a reunião: o resultado de ago–set (${brl(P['35'][4])}) ficou todo com a clínica. A Dra. Patrícia pode argumentar que ele já pagou o investimento. A diretoria precisa ter essa resposta pronta.</p></div></div></section>`);
+}
+
+/* REGRAS E PENDÊNCIAS */
+function rRegras(v){
+  add(v,`<section class="card"><h2 style="margin-bottom:6px">A regra em uma linha</h2><p style="max-width:80ch">A partir das receitas de outubro/2026, tudo o que a parceria fatura, menos tudo o que ela custa (impostos, cartão, insumos, viagens, estrutura da clínica e o investimento), é dividido meio a meio: 50% Clínica Núcleo, 50% Dra. Patrícia.</p></section>`);
+  add(v,`<div class="cols2"><section class="card"><h2 style="margin-bottom:12px">Entra na conta (desconta antes da divisão)</h2><ul class="ok-l">
+   <li>Impostos sobre o faturamento da parceria (PIS, COFINS, ISS se houver)</li><li>Taxas de cartão e antecipação das vendas da parceria</li><li>Insumos e ativos dos procedimentos</li>
+   <li><b>Passagem aérea, hotel, alimentação e transporte da Dra. Patrícia: a clínica paga e desconta da receita da tricologia</b> <span class="chip acc">regra de 08/10</span></li>
+   <li>Marketing específico aprovado pelos dois</li><li>Manutenção dos aparelhos da tricologia</li><li>Taxa de estrutura: a parte da despesa fixa da clínica usada pela parceria</li>
+   <li>Amortização dos aparelhos e da consultoria de implantação</li><li>IRPJ e CSLL sobre o faturamento da parceria</li><li>Reembolsos e devoluções a pacientes da parceria</li></ul></section>
+   <section class="card"><h2 style="margin-bottom:12px">Não entra (fica com a clínica)</h2><ul class="no-l">
+   <li>Medicamentos, implantes e honorários de outros serviços</li><li>Marketing institucional da clínica</li><li>Pró-labore e retiradas dos sócios</li><li>Empréstimos e parcelamentos de impostos antigos</li>
+   <li>Equipamentos e obras de outras áreas</li><li>Faturas de cartão sem detalhamento e despesa sem comprovante</li><li>Consultorias e mentorias de gestão da clínica</li>
+   <li>Transferências entre contas e dinheiro enviado para a conta do sócio</li><li>Multas e juros por atraso da clínica</li><li>Comissões da equipe comercial de outros serviços</li></ul></section></div>`);
+  add(v,`<section class="card"><h2 style="margin-bottom:10px">Como funciona todo mês</h2><div class="list">
+   ${['Receita da parceria: serviço de tricologia ou "DRA PATRICIA". Despesa: "TRICOLOGIA" ou "PATRICIA" na descrição. O que não estiver marcado não entra.','Fechamento até o dia 10; a Sra. Viviane confere os lançamentos da tricologia no sistema.','Repasse até o dia 15 do mês seguinte, contra nota fiscal da empresa da Dra. Patrícia (conta 2.02.04.002).','Mês negativo não tem partilha: o valor é compensado nos meses seguintes.','Taxa de estrutura revisada a cada 6 meses com a DRE da clínica.','Prestação de contas mensal: DRE da parceria e razão com comprovantes, aberta às duas partes.'].map((t,i)=>`<div class="li"><span class="d">${t}</span><span class="chip neu">${i+1}</span></div>`).join('')}</div></section>`);
+  const PEN=[['Início da partilha: receitas a partir de out/26; jul–set 100% da clínica','good','✓ Decidido'],['Viagens da Dra. Patrícia: a clínica paga e desconta da receita da tricologia','good','✓ Decidido'],
+   ['Conferência dos lançamentos de abr–set da tricologia no sistema','warn','! Sra. Viviane'],['Passagens, hotel e alimentação das visitas de setembro: não localizados','warn','! Localizar'],
+   ['Taxa de estrutura pelo método A (18,46%), revisão semestral','neu','A validar'],['Facial e corporal da Dra. Patrícia entram na parceria?','neu','A validar'],
+   ['Investimento: amortizar R$ 61,1 mil em 24× a partir de out/26','neu','A validar'],['Consultoria de tricologia (R$ 40 mil): quem recebeu','neu','A validar'],
+   ['Partilha sobre o vendido ou sobre o recebido (cartão parcelado)','neu','A validar'],['Pagamento à PJ da Dra. Patrícia, com nota, até o dia 15','neu','A validar'],
+   ['ISS 0% e IRPJ/CSLL presumidos (2,28% e 7,68%)','neu','Contabilidade']];
+  add(v,`<section class="card"><div class="card-h"><div><h2>Pendências antes de apresentar</h2><p>Decisões da diretoria e conferências em andamento.</p></div></div><div class="list">${PEN.map(p=>`<div class="li"><span class="d">${p[0]}</span><span class="chip ${p[1]}">${p[2]}</span></div>`).join('')}</div></section>`);
+}
+
+/* ---------- controles globais ---------- */
+const mesSel=document.getElementById('mes');mesSel.innerHTML=MLONG.map((m,i)=>`<option value="${i}">${m}/2026</option>`).join('');
+function syncMes(){mesSel.value=String(S.m)}
+mesSel.addEventListener('change',()=>{S.m=+mesSel.value;render()});
+const tb=document.getElementById('theme');const TH=['system','light','dark'],THL={system:'Tema: sistema',light:'Tema: claro',dark:'Tema: escuro'};
+function applyTheme(t){if(t==='system')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t);tb.textContent=THL[t];tb.dataset.t=t}
+tb.addEventListener('click',()=>{const t=TH[(TH.indexOf(tb.dataset.t||'system')+1)%3];applyTheme(t);try{localStorage.setItem('nucleo-theme',t)}catch(e){}render()});
+try{applyTheme(localStorage.getItem('nucleo-theme')||'system')}catch(e){applyTheme('system')}
+document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>go(b.dataset.mod)));
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(['painel','estrutura','razao','calc'].includes(S.mod))render()},150)});
+syncMes();
+const h0=(location.hash||'').replace('#','');
+if(h0==='todos'){Object.keys(MODS).forEach(k=>{S.mod=k;const sec=document.createElement('div');sec.className='view';sec.style.padding='0';const hh=document.createElement('h1');hh.textContent=MODS[k].t;view.appendChild(hh);view.appendChild(sec);MODS[k].r(sec)})}
+else go(MODS[h0]?h0:'painel',false);
+</script>
