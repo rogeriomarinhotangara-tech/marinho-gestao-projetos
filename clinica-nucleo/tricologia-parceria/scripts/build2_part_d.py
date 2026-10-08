@@ -86,7 +86,7 @@ for i,(d_,p_,w_,a_,f_) in enumerate(DEC,start=1):
 dv=DataValidation(type='list',formula1='"A validar,Aprovado,Ajustar"',allow_blank=True); ws.add_data_validation(dv); dv.add(f'G5:G{r-1}'); ws.freeze_panes='C5'
 
 # ============================================================ 00 Leia-me
-ws=W['00 Leia-me']; title(ws,'Clínica Núcleo — DRE da parceria de Tricologia e lançamentos jul–set/2026','Controladoria · Marinho Gestão & Resultados · versão para validação da diretoria · 08/10/2026')
+ws=W['00 Leia-me']; title(ws,'Clínica Núcleo S — DRE da parceria de Tricologia e lançamentos jul–set/2026','Controladoria · Marinho Gestão & Resultados · versão para validação da diretoria · 08/10/2026')
 ws.column_dimensions['A'].width=4; ws.column_dimensions['B'].width=66; ws.column_dimensions['C'].width=20; ws.column_dimensions['D'].width=70
 r=4; put(ws,r,2,'Números-chave (atualizam sozinhos)',font=FT_T2); r+=1
 KEYS=[('Faturamento da parceria — jul a set',f"={DRE_T}!E12",NUM,'Consultas + tricologia + facial/corporal da Dra. Patrícia'),
@@ -132,10 +132,10 @@ for a,b_ in [('01 Política Parceria','Regras da partilha: o que entra e o que n
     put(ws,r,2,a,font=FT_B); put(ws,r,4,b_); r+=1
 
 # ============================================================ 01 Política
-ws=W['01 Política Parceria']; title(ws,'Política da parceria de Tricologia — Clínica Núcleo × Dra. Patrícia Fabrini','Minuta para validação da diretoria. Os números vêm das abas 02 a 06.')
+ws=W['01 Política Parceria']; title(ws,'Política da parceria de Tricologia — Clínica Núcleo S × Dra. Patrícia Fabrini','Minuta para validação da diretoria. Os números vêm das abas 02 a 06.')
 ws.column_dimensions['A'].width=4; ws.column_dimensions['B'].width=60; ws.column_dimensions['C'].width=4; ws.column_dimensions['D'].width=60
 r=4; put(ws,r,2,'A regra em uma linha',font=FT_T2); r+=1
-put(ws,r,2,'A partir das receitas de outubro/2026, tudo o que a parceria fatura, menos tudo o que ela custa (impostos, insumos, viagens, estrutura da clínica e o investimento feito), é dividido meio a meio: 50% Clínica Núcleo, 50% Dra. Patrícia. Receitas até setembro/2026 são 100% da clínica.',align=WRAP,font=FT_B)
+put(ws,r,2,'A partir das receitas de outubro/2026, tudo o que a parceria fatura, menos tudo o que ela custa (impostos, insumos, viagens, estrutura da clínica e o investimento feito), é dividido meio a meio: 50% Clínica Núcleo S, 50% Dra. Patrícia. Receitas até setembro/2026 são 100% da clínica.',align=WRAP,font=FT_B)
 ws.merge_cells(start_row=r,start_column=2,end_row=r,end_column=4); ws.row_dimensions[r].height=34; r+=2
 put(ws,r,2,'A conta, na ordem',font=FT_T2); r+=1
 for a,b_ in [('1. Faturamento da parceria','Consultas + procedimentos de tricologia + facial/corporal da Dra. Patrícia (se aprovado)'),
@@ -145,7 +145,7 @@ for a,b_ in [('1. Faturamento da parceria','Consultas + procedimentos de tricolo
  ('5. (−) Taxa de estrutura da clínica','=IF(P_MET="A",FIXED(P_PCTA*100,1)&"% do faturamento (sala, recepção, energia, sistema, limpeza, contabilidade)","Diária de sala × dias de atendimento")'),
  ('6. (−) Amortização do investimento','=IF(P_AM_SW="SIM","Equipamentos + consultoria de implantação em "&P_AM_PRAZO&" parcelas mensais","Não entra: a clínica absorve")'),
  ('7. (−) IRPJ e CSLL presumidos','Sobre o faturamento da parceria'),('8. (=) Resultado líquido','Se negativo, é compensado nos meses seguintes antes de nova partilha'),
- ('9. Partilha','50% Clínica Núcleo · 50% Dra. Patrícia')]:
+ ('9. Partilha','50% Clínica Núcleo S · 50% Dra. Patrícia')]:
     put(ws,r,2,a,font=FT_B,border=B_ALL); put(ws,r,4,b_,border=B_ALL,align=WRAP); ws.row_dimensions[r].height=30; r+=1
 r+=1
 put(ws,r,2,'ENTRA na conta (desconta antes da partilha)',font=FT_GRN,fill=F_OK); put(ws,r,4,'NÃO ENTRA (fica com a clínica)',font=FT_RED,fill=F_WARN); r+=1

@@ -1,4 +1,4 @@
-<title>Controladoria Clínica Núcleo</title>
+<title>Controladoria Clínica Núcleo S</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
@@ -82,7 +82,9 @@ a{color:var(--accent)}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .g-73{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
-.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi-note{font-size:12.5px;color:var(--ink-2);background:var(--surface);border:1px dashed var(--line-2);border-radius:var(--r);padding:10px 14px}
+.kpi-note b{color:var(--ink)}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .kpi .k-l{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .kpi .k-v{font-family:var(--f-display);font-weight:800;font-size:21px;letter-spacing:-.01em;white-space:nowrap}
@@ -257,7 +259,7 @@ tr[data-drill] td:first-child::after{content:" ›";color:var(--accent);font-wei
 .crow[aria-expanded="true"] .chev{transform:rotate(90deg)}
 .citems{padding:4px 14px 12px 24px;background:var(--surface-2);border-top:1px dashed var(--line-2)}
 .go-row{display:flex;gap:12px;flex-wrap:wrap}
-@media (max-width:1280px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:1100px){.g-73,.g3{grid-template-columns:1fr}.steps{grid-template-columns:1fr}}
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
@@ -282,7 +284,7 @@ tr[data-drill] td:first-child::after{content:" ›";color:var(--accent);font-wei
 
 <div class="app">
   <aside class="side" aria-label="Módulos">
-    <div class="brand"><div class="brand-mark">N</div><div><b>Clínica Núcleo</b><span>Controladoria · 2026</span></div></div>
+    <div class="brand"><div class="brand-mark">NS</div><div><b>Clínica Núcleo S</b><span>Controladoria · 2026</span></div></div>
     <nav class="navgrp" aria-label="Clínica">
       <div class="navlbl">Clínica</div>
       <button class="nav" data-mod="painel"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Painel</button>
@@ -417,12 +419,16 @@ function rPainel(v){
   const cd=i=>-L('cd').v[i], pes=i=>-L('op_Pessoal').v[i], opx=i=>-sum(OPS.filter(o=>o.k!=='op_Pessoal').map(o=>o.v[i])), eb=i=>L('ebitda').v[i], est=i=>D.est_tot[i]/ROB[i];
   const K=[
     ['Receita bruta',kb(ROB[m]),'faturamento do mês',delta(ROB[m],p!=null?ROB[p]:null,true),'rob',`${R0('Receita Operacional Bruta')} contas`],
+    ['Despesa total',kb(despT(m)),pc(despT(m)/ROB[m])+' da receita',delta(despT(m),p!=null?despT(p):null,false),'desp',`${sum(DESP_G.map(R0))} contas`],
+    ['EBITDA',kb(eb(m)),'margem '+pc(eb(m)/ROB[m]),delta(eb(m),p!=null?eb(p):null,true),'ebitda','composição'],
+    ['Resultado líquido',kb(L('ll').v[m]),'margem líquida '+pc(L('ll').v[m]/ROB[m]),delta(L('ll').v[m],p!=null?L('ll').v[p]:null,true),'bridge|ll','composição'],
     ['Custos diretos (CMV)',kb(cd(m)),pc(cd(m)/ROB[m])+' da receita',delta(cd(m),p!=null?cd(p):null,false),'cd',`${R0('Custos Diretos')} contas`],
     ['Despesa trabalhista',kb(pes(m)),pc(pes(m)/ROB[m])+' da receita',delta(pes(m),p!=null?pes(p):null,false),'pes',`${R0('Pessoal')} contas`],
     ['Despesa operacional',kb(opx(m)),pc(opx(m)/ROB[m])+' da receita',delta(opx(m),p!=null?opx(p):null,false),'opx',`${sum(OPX_G.map(R0))} contas`],
-    ['EBITDA',kb(eb(m)),'margem '+pc(eb(m)/ROB[m]),delta(eb(m),p!=null?eb(p):null,true),'ebitda','composição'],
     ['Taxa de estrutura',pc(est(m),2),kb(D.est_tot[m])+' de estrutura',`<span class="chip acc">ref. ${pc(EST_PCT,2)}</span>`,'est',`${allContas.filter(c=>c.est[m]>0).length} contas`]];
   add(v,`<div class="kpis">${K.map(k=>`<button type="button" class="kpi" data-drill="${k[4]}" aria-label="${k[0]}: ver as contas"><span class="k-l">${k[0]}</span><span class="k-v">${k[1]}</span><span class="k-s">${k[2]}</span><span class="k-row">${k[3]}</span><span class="k-go">Ver ${k[5]} ›</span></button>`).join('')}</div>`);
+  const eIn=gs=>sum(gs.map(g=>{const r=grpRaz(g);return r?sum(r.contas.map(c=>c.est[m])):0}));const ePes=eIn(['Pessoal']),eOpx=eIn(OPX_G),eOut=D.est_tot[m]-ePes-eOpx;
+  add(v,`<p class="kpi-note">Despesa total = impostos sobre o faturamento + custos diretos + despesa trabalhista + despesa operacional. Receita − despesa total = EBITDA. <b>A taxa de estrutura não soma com os outros cartões:</b> é uma seleção de contas que já estão dentro deles. Em ${MLONG[m]}, dos ${brl(D.est_tot[m])} de estrutura, <b>${brl(ePes)}</b> estão na despesa trabalhista, <b>${brl(eOpx)}</b> na despesa operacional${eOut>0.5?` e ${brl(eOut)} em tarifas bancárias`:''}.</p>`);
   const c=add(v,`<section class="card"><div class="card-h"><div><h2>Receita, despesas e EBITDA</h2><p>Despesas = impostos sobre o faturamento + custos diretos + pessoal + despesas operacionais. Receita − despesas = EBITDA.</p></div>
     <div class="legend"><span><i style="background:var(--s1)"></i>Receita</span><span><i style="background:var(--s2)"></i>Despesas</span><span><i class="ln" style="background:var(--s3)"></i>EBITDA</span></div></div><div class="chart" id="ch1"></div></section>`);
   chartBars(c.querySelector('#ch1'),{labels:ML,bars:[{c:'var(--s1)',v:ML.map((_,i)=>recT(i))},{c:'var(--s2)',v:ML.map((_,i)=>despT(i))}],line:{c:'var(--s3)',v:ML.map((_,i)=>eb(i))},
@@ -544,7 +550,7 @@ function wfRows(r){
   const rows=[['Faturamento da tricologia',r.rec,'t'],['PIS e COFINS',-(r.pis+r.cof+r.iss),'n'],['Taxas de cartão',-r.cart,'n'],['Insumos e ativos',-r.ins,'n'],['Viagens',-r.viag,'n'],
    ['Outras despesas diretas',-r.out,'n'],['Taxa de estrutura',-r.est,'e'],['Amortização do investimento',-r.am,'e'],['IRPJ e CSLL',-r.irc,'n']];
   if(r.prej)rows.push(['Prejuízo anterior',-r.prej,'n']);
-  rows.push(['Resultado a dividir',r.base,'t'],['Dra. Patrícia — 50%',r.pat,'p'],['Clínica Núcleo — 50%',r.cli,'c']);return rows}
+  rows.push(['Resultado a dividir',r.base,'t'],['Dra. Patrícia — 50%',r.pat,'p'],['Clínica Núcleo S — 50%',r.cli,'c']);return rows}
 function wf(el,r){
   const rows=wfRows(r);const mx=r.rec||1;let run=0,h='';
   rows.forEach(([l,val,k])=>{let a,b,col;
@@ -656,7 +662,7 @@ function rCalc(v){
       ['(−) Outras despesas diretas',-r.out,r.outIdx?`índice ${pc(ix.out,2)} (sem valor digitado)`:'valor digitado'],['(−) Taxa de estrutura da clínica',-r.est,`${pc(ix.est,2)} do faturamento`],
       ['(−) Amortização do investimento',-r.am,c.am==='SIM'?'parcela fixa mensal':'não descontada'],['(−) IRPJ e CSLL',-r.irc,`${pc(ix.irc,2)} das consultas + ${pc(ix.irp,2)} dos procedimentos`],
       ['(=) Resultado do mês',r.res,'','t'],['(−) Prejuízo anterior',-r.prej,'compensação'],['(=) Base de partilha',r.base,'se negativo, zero','t'],
-      ['Dra. Patrícia',r.pat,pc(ix.pat,0)+' da base','p'],['Clínica Núcleo',r.cli,pc(1-ix.pat,0)+' da base','c'],['Clínica — total (50% + estrutura + amortização)',r.cliTot,'o que fica com a clínica','c']]
+      ['Dra. Patrícia',r.pat,pc(ix.pat,0)+' da base','p'],['Clínica Núcleo S',r.cli,pc(1-ix.pat,0)+' da base','c'],['Clínica — total (50% + estrutura + amortização)',r.cliTot,'o que fica com a clínica','c']]
      .map(x=>`<tr class="${x[3]==='t'?'tot':''}"><td style="${x[3]==='p'?'color:var(--s1);font-weight:700':x[3]==='c'?'color:var(--s3);font-weight:700':''}">${x[0]}</td><td>${brl(x[1])}</td><td>${r.rec?pc(x[1]/r.rec,2):'–'}</td><td class="wrap" style="text-align:left;color:var(--ink-2)">${x[2]}</td></tr>`).join('')}
    </tbody></table></div><h3 style="margin:18px 0 8px">De cada R$ 100 faturados</h3>${r.rec?stack100(r):'<p class="note">Digite um faturamento.</p>'}</section>`);
   const set=(k,val)=>{S.calc[k]=val;render();const n=document.getElementById('c-'+k);if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}};
@@ -700,7 +706,7 @@ function rParc(v){
 
 /* REGRAS E PENDÊNCIAS */
 function rRegras(v){
-  add(v,`<section class="card"><h2 style="margin-bottom:6px">A regra em uma linha</h2><p style="max-width:80ch">A partir das receitas de outubro/2026, tudo o que a parceria fatura, menos tudo o que ela custa (impostos, cartão, insumos, viagens, estrutura da clínica e o investimento), é dividido meio a meio: 50% Clínica Núcleo, 50% Dra. Patrícia.</p></section>`);
+  add(v,`<section class="card"><h2 style="margin-bottom:6px">A regra em uma linha</h2><p style="max-width:80ch">A partir das receitas de outubro/2026, tudo o que a parceria fatura, menos tudo o que ela custa (impostos, cartão, insumos, viagens, estrutura da clínica e o investimento), é dividido meio a meio: 50% Clínica Núcleo S, 50% Dra. Patrícia.</p></section>`);
   add(v,`<div class="cols2"><section class="card"><h2 style="margin-bottom:12px">Entra na conta (desconta antes da divisão)</h2><ul class="ok-l">
    <li>Impostos sobre o faturamento da parceria (PIS, COFINS, ISS se houver)</li><li>Taxas de cartão e antecipação das vendas da parceria</li><li>Insumos e ativos dos procedimentos</li>
    <li><b>Passagem aérea, hotel, alimentação e transporte da Dra. Patrícia: a clínica paga e desconta da receita da tricologia</b> <span class="chip acc">regra de 08/10</span></li>
@@ -724,6 +730,7 @@ function rRegras(v){
 /* ---------- detalhamento (painel lateral) ---------- */
 const DRW=document.getElementById('drw'),DBG=document.getElementById('drw-bg');
 const OPX_G=OPS.filter(o=>o.k!=='op_Pessoal').map(o=>o.g);
+const DESP_G=['Deduções da Receita','Custos Diretos','Pessoal',...OPX_G];
 const conOf=(r,extra)=>r.contas.map(c=>Object.assign({tipo:r.tipo,g:r.g},c,extra||{}));
 function secG(g,sign=1){const r=grpRaz(g);if(!r)return null;return{label:gl(g),sign,contas:conOf(r)}}
 function secTri(k,sign=1){const t=D.tri[k];return t?{label:t.l,sign,contas:t.contas.map(c=>Object.assign({tipo:t.tipo,g:'Tricologia'},c))}:null}
@@ -731,6 +738,7 @@ function drillSpec(key){
   const [kind,a1,a2]=key.split('|');const tot=secs=>i=>sum(secs.map(s=>sum(s.contas.map(c=>s.sign*(s.est?c.est[i]:c.v[i])))));
   let sp;
   if(kind==='rob'){const ss=[secG('Receita Operacional Bruta')];sp={t:'Receita bruta',e:'Painel',sub:'Receita operacional bruta por conta. Cada conta abre os serviços vendidos no mês.',ss,up:true,rz:'Receita Operacional Bruta'}}
+  else if(kind==='desp'){sp={t:'Despesa total',e:'Painel',sub:'Impostos sobre o faturamento, custos diretos, despesa trabalhista e despesas operacionais, conta a conta. Retiradas, empréstimos e investimentos ficam fora (não são despesa do resultado).',ss:DESP_G.map(g=>secG(g)).filter(Boolean),fx:i=>`${brl(recT(i))} de receitas − ${brl(despT(i))} de despesa total = EBITDA <b>${brl(L('ebitda').v[i])}</b>`}}
   else if(kind==='cd'){sp={t:'Custos diretos (CMV)',e:'Painel',sub:'Medicamentos, insumos, honorários, comissões e taxas de antecipação, conta a conta.',ss:[secG('Custos Diretos')],rz:'Custos Diretos'}}
   else if(kind==='pes'){sp={t:'Despesa trabalhista',e:'Painel',sub:'Pessoal: salários, encargos, benefícios, pró-labore e rescisões. O valor por pessoa não é exibido.',ss:[secG('Pessoal')],rz:'Pessoal'}}
   else if(kind==='opx'){sp={t:'Despesa operacional',e:'Painel',sub:'Todas as despesas operacionais, menos pessoal, separadas por grupo.',ss:OPX_G.map(g=>secG(g)).filter(Boolean)}}
@@ -760,6 +768,9 @@ function renderDrill(){
   h+=`<div class="mnav"><button class="btn" data-mv="-1" ${m===0?'disabled':''} aria-label="Mês anterior">‹</button><b style="font-family:var(--f-display);min-width:118px;text-align:center">${MLONG[m]}/2026</b><button class="btn" data-mv="1" ${m===8?'disabled':''} aria-label="Próximo mês">›</button></div>`;
   h+=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div class="big">${brl(tv)}</div><div class="note">${pc(tv/ROB[m])} da receita bruta do mês · ${m?delta(tv,pv,!!sp.up)+' vs '+ML[m-1]:''}</div></div></div>`;
   if(sp.fx)h+=`<div class="banner" style="padding:10px 14px;font-size:13px">${sp.fx(m)}</div>`;
+  const isEst=S.drill.key.startsWith('est');
+  if(!isEst){const eIn=sum(sp.ss.map(s=>sum(s.contas.filter(c=>c.tipo==='Despesa').map(c=>c.est[m]))));
+    if(eIn>0.005)h+=`<div class="kpi-note">Destas contas, <b>${brl(eIn)}</b>${Math.abs(tv)>0.005&&!/ebitda|bridge/.test(S.drill.key)?` (${pc(eIn/Math.abs(tv))} deste total)`:''} fazem parte da <b>estrutura compartilhada</b>, a base da taxa de estrutura. Elas aparecem com o selo <span class="chip acc">estrutura</span>. A taxa não é uma despesa a mais: é esta seleção de contas.</div>`}
   h+=`<div class="mbars" role="group" aria-label="Escolher o mês">${ML.map((l,i)=>{const v=T(i);return`<button type="button" data-mi="${i}" aria-pressed="${i===m}" aria-label="${MLONG[i]}: ${brl(v)}"><span class="b" style="height:${Math.max(2,Math.abs(v)/mx*52)}px;${v<0?'background:var(--bad)':''}"></span>${MES[i]}</button>`}).join('')}</div>`;
   const nzMonths=ML.map((_,i)=>i).filter(i=>Math.abs(T(i))>0.004);
   if(Math.abs(tv)<0.005&&sp.ss.every(s=>s.contas.every(c=>Math.abs(cval(s,c,m))<0.005))){
@@ -769,7 +780,7 @@ function renderDrill(){
     const cmx=Math.max(...cs.map(x=>Math.abs(x.v)))||1;
     h+=`<section class="dsec"><div class="dsec-h"><span>${esc(s.label)}</span><span>${brl(st)}${sp.ss.length>1&&Math.abs(tv)>0.005?` <small class="muted" style="font-weight:500">${pc(st/tv)}</small>`:''}</span></div>`;
     (S.drill.all?cs:nz).forEach(x=>{const id=si+':'+x.c.c;const op=S.drill.open.has(id);const col=x.c.tipo==='Receita'?'var(--s1)':'var(--s2)';
-      h+=`<button type="button" class="crow" data-op="${id}" aria-expanded="${op}"><span class="cn"><span class="mono">${x.c.c}</span>${esc(x.c.n)}</span><span class="num" style="text-align:right"><b>${brl(x.v)}</b><br><small class="muted">${Math.abs(tv)>0.005?pc(x.v/tv)+' do total':''}</small></span><span>${m?delta(x.v,x.p,!!sp.up):''}</span><span class="chev" aria-hidden="true">›</span><span class="pbar"><i style="width:${Math.abs(x.v)/cmx*100}%;background:${col}"></i></span></button>`;
+      h+=`<button type="button" class="crow" data-op="${id}" aria-expanded="${op}"><span class="cn"><span class="mono">${x.c.c}</span>${esc(x.c.n)}${!isEst&&x.c.tipo==='Despesa'&&x.c.est[m]>0.005?` <span class="chip acc" style="font-size:10.5px;padding:1px 6px">${Math.abs(x.c.est[m]-x.c.v[m])>0.005?'parte na estrutura':'estrutura'}</span>`:''}</span><span class="num" style="text-align:right"><b>${brl(x.v)}</b><br><small class="muted">${Math.abs(tv)>0.005?pc(x.v/tv)+' do total':''}</small></span><span>${m?delta(x.v,x.p,!!sp.up):''}</span><span class="chev" aria-hidden="true">›</span><span class="pbar"><i style="width:${Math.abs(x.v)/cmx*100}%;background:${col}"></i></span></button>`;
       if(op){const d=x.c.d[String(D.meses[m])];let ih='';
         if(s.est&&Math.abs(x.c.est[m]-x.c.v[m])>0.005)ih+=`<p class="note" style="margin:6px 0">Só parte desta conta entra na estrutura: ${brl(x.c.est[m])} de ${brl(x.c.v[m])}.</p>`;
         if(!d)ih+=`<p class="note" style="margin:8px 0">Sem lançamentos nesta conta em ${MLONG[m]}.</p>`;

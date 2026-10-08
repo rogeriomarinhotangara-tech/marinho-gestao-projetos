@@ -83,7 +83,7 @@ par(8,'Taxas de cartão e antecipação (média sobre a receita)',0.022,PCT2,'P_
 par(9,'IRPJ + CSLL presumidos — consultas',0.0768,PCT2,'P_IRCS_C','32% × 15% + 32% × 9%. Consulta não tem equiparação hospitalar.')
 par(10,'IRPJ + CSLL presumidos — procedimentos',0.0228,PCT2,'P_IRCS_P','8% × 15% + 12% × 9%. Alíquota efetiva paga no 1º tri/26: 1,95% (indica equiparação hospitalar). CONFIRMAR com a contabilidade.')
 sec(12,'Partilha do resultado')
-par(13,'Participação da Clínica Núcleo',0.5,PCT,'P_CLI','Acordo: 50% / 50% do resultado líquido.')
+par(13,'Participação da Clínica Núcleo S',0.5,PCT,'P_CLI','Acordo: 50% / 50% do resultado líquido.')
 par(14,'Participação da Dra. Patrícia',"=1-P_CLI",PCT,'P_PAT','Calculado.',is_input=False)
 par(16,'Mês de início da partilha (AAAAMM)',202610,'0','P_PART_INI','Decisão da diretoria (08/10/2026): só as receitas a partir de out/26 são divididas. Receitas anteriores, inclusive parcelas de cartão de vendas de ago e set que entram depois, são 100% da clínica.')
 par(15,'Procedimentos FACIAL e CORPORAL da Dra. Patrícia entram na parceria? (SIM/NÃO)','SIM',None,'P_FC','Em agosto foram R$ 61,2 mil (39% da receita da parceria). Se entrarem, os produtos usados neles também precisam entrar — hoje não há compra identificada para eles.')
@@ -222,7 +222,7 @@ for n in range(1,37):
     put(ws,r,5,f'=MAX(0,$D$10*(P_AM_SW="SIM")-SUM($D${s0}:D{r}))',fmt=NUM,border=B_ALL); r+=1
 
 # ============================================================ 03 DRE Tricologia
-ws = W['03 DRE Tricologia']; title(ws,'DRE da Tricologia — parceria Clínica Núcleo × Dra. Patrícia Fabrini',
+ws = W['03 DRE Tricologia']; title(ws,'DRE da Tricologia — parceria Clínica Núcleo S × Dra. Patrícia Fabrini',
  'A partilha 50/50 começa nas receitas de OUT/2026. Jul–set/2026 mostram a conta com números reais, mas o resultado desses meses é 100% da clínica (aba 02, início da partilha).')
 for col,w in zip('ABCDEFGH',[60,15,15,15,17,19,12,70]): ws.column_dimensions[col].width=w
 hdr(ws,4,1,['Linha','Jul/26','Ago/26','Set/26','Acumulado jul–set','Cenário (simulação)','% receita (cenário)','Como é calculado'])
@@ -261,7 +261,7 @@ LINES=[(8,'RECEITA',None,None,'sec',''),
  (29,'(=) Resultado líquido do mês',lambda c:f'={c}26+{c}27+{c}28','=F26+F27+F28','t',''),
  (30,'Prejuízo acumulado de meses anteriores',None,'=0','n','Compensado antes de nova partilha'),
  (31,'(=) Base de partilha (só a partir do início da partilha)',lambda c:f'=IF({c}5>=P_PART_INI,MAX(0,{c}29+{c}30),0)','=MAX(0,F29+F30)','t',''),
- (32,'Clínica Núcleo — 50%',lambda c:f'={c}31*P_CLI','=F31*P_CLI','k',''),
+ (32,'Clínica Núcleo S — 50%',lambda c:f'={c}31*P_CLI','=F31*P_CLI','k',''),
  (33,'Dra. Patrícia Fabrini — 50%',lambda c:f'={c}31*P_PAT','=F31*P_PAT','k','Repasse contra NF da PJ dela (conta 2.02.04.002)'),
  (34,'Prejuízo a compensar no mês seguinte',lambda c:f'=IF({c}5>=P_PART_INI,MIN(0,{c}29+{c}30),0)','=MIN(0,F29+F30)','n',''),
  (35,'Resultado antes do início da partilha — 100% da clínica',lambda c:f'=IF({c}5<P_PART_INI,{c}29,0)','=0','k','Até set/26 a receita da tricologia é só da clínica'),

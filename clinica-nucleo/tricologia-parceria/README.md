@@ -1,6 +1,6 @@
-# Clínica Núcleo — DRE da parceria de Tricologia (jul–set/2026)
+# Clínica Núcleo S — DRE da parceria de Tricologia (jul–set/2026)
 
-Parceria Clínica Núcleo × Dra. Patrícia Fabrini: o resultado líquido da parceria
+Parceria Clínica Núcleo S × Dra. Patrícia Fabrini: o resultado líquido da parceria
 (faturamento − impostos − insumos − despesas diretas − taxa de estrutura −
 amortização do investimento − IRPJ/CSLL) é dividido 50/50 **a partir das receitas de
 out/2026** (decisão de 08/10/2026). Até set/2026 a receita da tricologia é 100% da clínica.

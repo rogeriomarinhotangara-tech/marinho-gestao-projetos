@@ -92,14 +92,14 @@ ST=[('Faturamento da tricologia','=BC_REC',None,'Tudo o que os atendimentos da D
  ('8. (−) IRPJ e CSLL','=-BC_REC*I_IRCS_P','=I_IRCS_P','Faturamento (procedimentos)','Lei: Lucro Presumido. Consultas pagam 7,68%.'),
  ('(=) Resultado a dividir',f'=SUM(C{s0}:C{s0+8})',None,'',''),
  ('Dra. Patrícia — 50%',f'=C{s0+9}*I_PAT','=I_PAT','Resultado',''),
- ('Clínica Núcleo — 50%',f'=C{s0+9}*I_CLI','=I_CLI','Resultado','')]
+ ('Clínica Núcleo S — 50%',f'=C{s0+9}*I_CLI','=I_CLI','Resultado','')]
 for i,(lab,f,idx,sobre,fonte) in enumerate(ST):
     k='t' if lab.startswith('(=)') or i==0 else ('k' if '50%' in lab else 'n')
     fill=F_TOT if k=='t' else (F_OK if k=='k' else None); font=FT_B if k!='n' else FT_N
     put(ws,r,2,lab,border=B_ALL,font=font,fill=fill); put(ws,r,3,f,fmt=NUM,border=B_ALL,font=font,fill=fill)
     put(ws,r,4,f'=IFERROR(C{r}/BC_REC,0)',fmt=PCT2,border=B_ALL,font=font,fill=fill); put(ws,r,5,idx,fmt=PCT2,border=B_ALL)
     put(ws,r,6,sobre,border=B_ALL,align=WRAP,font=FT_NOTE); put(ws,r,7,fonte,border=B_ALL,align=WRAP,font=FT_NOTE); ws.row_dimensions[r].height=30; r+=1
-put(ws,r,2,'Clínica Núcleo — total (50% + estrutura + amortização)',border=B_ALL,font=FT_B,fill=F_OK); put(ws,r,3,f'=C{s0+11}-C{s0+6}-C{s0+7}',fmt=NUM,border=B_ALL,font=FT_B,fill=F_OK)
+put(ws,r,2,'Clínica Núcleo S — total (50% + estrutura + amortização)',border=B_ALL,font=FT_B,fill=F_OK); put(ws,r,3,f'=C{s0+11}-C{s0+6}-C{s0+7}',fmt=NUM,border=B_ALL,font=FT_B,fill=F_OK)
 put(ws,r,4,f'=IFERROR(C{r}/BC_REC,0)',fmt=PCT2,border=B_ALL,font=FT_B,fill=F_OK); r+=2
 put(ws,r,2,'A estrutura e a amortização não são lucro da clínica: pagam a sala, a equipe, o sistema e os aparelhos que a parceria usa. A partilha começa nas receitas de outubro/2026.',font=FT_NOTE,align=WRAP)
 ws.merge_cells(start_row=r,start_column=2,end_row=r,end_column=7); ws.row_dimensions[r].height=30
@@ -138,8 +138,8 @@ CALC=[(15,'Receita bruta da parceria','=C_REC','t','O que foi faturado com os at
  (29,'(−) Prejuízo de meses anteriores','=-C_PREJ','n','Compensação de mês anterior negativo.'),
  (30,'(=) Base de partilha','=MAX(0,C28+C29)','t','Se der negativo, não há partilha e o valor vai para o mês seguinte.'),
  (31,'Dra. Patrícia — 50%','=C30*I_PAT','k','O valor que ela recebe, contra nota fiscal da empresa dela.'),
- (32,'Clínica Núcleo — 50%','=C30*I_CLI','k','A parte da clínica no resultado.'),
- (33,'Clínica Núcleo — total (50% + estrutura + amortização)','=C32-C24-C26','k','Tudo o que fica com a clínica: a parte dela, mais a estrutura e o investimento que ela repõe.'),
+ (32,'Clínica Núcleo S — 50%','=C30*I_CLI','k','A parte da clínica no resultado.'),
+ (33,'Clínica Núcleo S — total (50% + estrutura + amortização)','=C32-C24-C26','k','Tudo o que fica com a clínica: a parte dela, mais a estrutura e o investimento que ela repõe.'),
  (34,'Prejuízo que passa para o mês seguinte','=-MIN(0,C28+C29)','n','Preencher na entrada "Prejuízo de meses anteriores" do mês seguinte.')]
 for rr,lab,f,k,ex in CALC:
     fill=F_TOT if k=='t' else (F_OK if k=='k' else None); font=FT_B if k in ('t','k') else FT_N
@@ -189,7 +189,7 @@ CL=[(15,'Receita bruta da parceria',lambda c:f'={c}6+{c}7+IF(M_FC="SIM",{c}8,0)'
  (25,'Prejuízo de meses anteriores',None,'n'),
  (26,'(=) Base de partilha',lambda c:f'=MAX(0,{c}24+{c}25)','t'),
  (27,'Dra. Patrícia — 50%',lambda c:f'={c}26*I_PAT','k'),
- (28,'Clínica Núcleo — 50%',lambda c:f'={c}26*I_CLI','k'),
+ (28,'Clínica Núcleo S — 50%',lambda c:f'={c}26*I_CLI','k'),
  (29,'Clínica — total (50% + estrutura + amortização)',lambda c:f'={c}28-{c}21-{c}22','k'),
  (30,'Prejuízo que passa para o mês seguinte',lambda c:f'=MIN(0,{c}24+{c}25)','n'),
  (31,'Dra. Patrícia — % da receita',lambda c:f'=IFERROR({c}27/{c}15,0)','p')]
@@ -226,7 +226,7 @@ EXP=[('Quando começa','A divisão vale para as receitas a partir de outubro/202
 r=4
 for a,b_ in EXP: put(ws,r,2,a,font=FT_B,border=B_ALL,align=WRAP); put(ws,r,3,b_,border=B_ALL,align=WRAP); ws.row_dimensions[r].height=46; r+=1
 # ================= Como usar
-ws=wb['Como usar']; title(ws,'Calculadora da Parceria de Tricologia — Clínica Núcleo','Controladoria · 08/10/2026')
+ws=wb['Como usar']; title(ws,'Calculadora da Parceria de Tricologia — Clínica Núcleo S','Controladoria · 08/10/2026')
 ws.column_dimensions['A'].width=4; ws.column_dimensions['B'].width=110
 r=4
 for t in ['A partilha com a Dra. Patrícia começa nas receitas de outubro/2026. Até setembro, a receita da tricologia é 100% da clínica.',

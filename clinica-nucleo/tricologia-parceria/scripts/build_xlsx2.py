@@ -26,7 +26,7 @@ MESES = [202601,202602,202603,202604,202605,202606,202607,202608,202609]
 MLAB = ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26']
 
 # ============================================================ 19 Plano de Contas
-ws = W['19 Plano de Contas']; title(ws,'Plano de Contas Financeiro-Gerencial — Clínica Núcleo (oficial)',
+ws = W['19 Plano de Contas']; title(ws,'Plano de Contas Financeiro-Gerencial — Clínica Núcleo S (oficial)',
  'Fonte: "Plano de Contas Nucleo.xlsx" (Google Drive, 18/08/2026). Em amarelo: contas criadas nesta reestruturação. Colunas F e G: como cada conta entra na DRE da Tricologia e na base de rateio.')
 hdr(ws,4,1,['Código','Conta','Grupo DRE','Natureza','Subgrupo','Linha na DRE da Tricologia','Entra na base de estrutura?','Tipo','Origem','Regra de uso (plano oficial)'],
     [13,50,34,16,40,34,14,11,24,70])

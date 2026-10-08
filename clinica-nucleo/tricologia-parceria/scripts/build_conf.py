@@ -153,7 +153,7 @@ for it,oq,v in ITENS:
 dv3.add(f'G{c1}:G{r-1}')
 ws.freeze_panes='A4'
 # ---------------- Como conferir
-ws=wb['Como conferir']; title(ws,'Conferência da Parceria de Tricologia — para a Sra. Viviane (assistente financeira)','Clínica Núcleo · Controladoria (Rogério Marinho) · 08/10/2026')
+ws=wb['Como conferir']; title(ws,'Conferência da Parceria de Tricologia — para a Sra. Viviane (assistente financeira)','Clínica Núcleo S · Controladoria (Rogério Marinho) · 08/10/2026')
 ws.column_dimensions['A'].width=4; ws.column_dimensions['B'].width=110
 r=4
 for t in ['Viviane, esta planilha reúne tudo o que lançamos como tricologia. Precisamos que você confira cada linha no sistema antes de apresentarmos a conta à Dra. Patrícia.',
