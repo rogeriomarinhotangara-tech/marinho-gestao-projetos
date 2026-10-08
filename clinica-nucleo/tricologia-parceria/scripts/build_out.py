@@ -16,7 +16,9 @@ for c in ('Data de emissão','Data de vencimento'): o[c]=pd.to_datetime(o[c]).dt
 o['Baixa']=pd.to_datetime(o['Data de baixa'],dayfirst=True)
 o['MAN']=''; o['ADJ_MAN']=0.0; o['ALERTA_MAN']=''
 _adds=[]
-for aj in json.load(open(SP+'/data4/ajustes_out.json',encoding='utf-8')):
+AJ=json.load(open(SP+'/data4/ajustes_out.json',encoding='utf-8'))
+def NM(i): return ' '.join(AJ[i]['paciente'].title().split()[:2])
+for aj in AJ:
     base_=o[(o.Paciente==aj['paciente'])&(o['Serviços']==aj['base_servico'])]
     assert len(base_)>=1,aj['paciente']
     x_=base_.iloc[0].copy()
@@ -289,7 +291,7 @@ hdr(ws,4,1,['#','Verificação','Valor','Status','Detalhe e ação'])
 liq_parc=float(o[o['Método'].str.contains('parcelado',case=False)]['Valor líquido'].sum())
 A=[('Total do relatório de transações = soma da aba Receitas CZS (valor no sistema)','=SUM(OR_SIS)','=IF(ROUND(SUM(OR_SIS)-57750,2)=0,"OK","ATENÇÃO")','40 lançamentos, R$ 57.750,00 no sistema, conferido ao centavo.'),
  ('Faturamento considerado = sistema + ajustes da diretoria','=SUM(OR_VAL)','=IF(ROUND(SUM(OR_VAL)-SUM(OR_SIS)-SUM(OR_CMP),2)=0,"OK","ATENÇÃO")','R$ 57.750,00 no sistema + R$ 2.400,00 (consultas pelo valor total) + R$ 8.100,00 (pescoço) + R$ 5.000,00 (saldo do corporal) = R$ 73.250,00.'),
- ('Ajustes da diretoria nos procedimentos (08/10)','=SUMIFS(OR_CMP,OR_TIPO,"Procedimento")','ATENÇÃO','José Railson: pescoço R$ 8.100,00 pago via PIX em 05/10, mesmo dia do facial; não está no relatório: lançar no sistema. Maria Agaivide: saldo de R$ 5.000,00 do corporal considerado pago via PIX (total R$ 10.000,00); ainda devido no sistema: conferir a entrada do PIX e dar baixa.'),
+ ('Ajustes da diretoria nos procedimentos (08/10)','=SUMIFS(OR_CMP,OR_TIPO,"Procedimento")','ATENÇÃO',f'{NM(0)}: pescoço R$ 8.100,00 pago via PIX em 05/10, mesmo dia do facial; não está no relatório: lançar no sistema. {NM(1)}: saldo de R$ 5.000,00 do corporal considerado pago via PIX (total R$ 10.000,00); ainda devido no sistema: conferir a entrada do PIX e dar baixa.'),
  ('Todas as receitas classificadas em uma linha da DRE','=COUNTA(OR_LIN)','=IF(COUNTA(OR_LIN)=COUNTA(OR_PAC),"OK","ATENÇÃO")','42 linhas: 40 do relatório + 2 ajustes. Tricologia R2 (30), consultas R1 (6), facial, pescoço e corporal R3 (6). Nenhuma receita fora da DRE.'),
  ('Consultas pelo valor total: R$ 400 → R$ 800 e R$ 500 → R$ 900','=SUMIFS(OR_VAL,OR_TIPO,"Consulta")','=IF(AND(COUNTIFS(OR_TIPO,"Consulta")=COUNTIF(OR_SIS,400)+COUNTIF(OR_SIS,500),COUNTIFS(OR_TIPO,"Consulta",OR_VAL,800)+COUNTIFS(OR_TIPO,"Consulta",OR_VAL,900)=COUNTIFS(OR_TIPO,"Consulta"),SUMIFS(OR_VAL,OR_TIPO,"Consulta")=SUMIFS(OR_VAL,OR_LIN,"R1")),"OK","ATENÇÃO")','6 consultas: 5 × R$ 800 + 1 × R$ 900 = R$ 4.900 (no sistema: R$ 2.500), conta 1.01.03.001. Os outros 34 lançamentos (R$ 55.250) são procedimentos. Orientação da diretoria em 08/10.'),
  ('DRE de Cruzeiro do Sul: faturamento = faturamento considerado',f"={q('DRE Cruzeiro do Sul')}!B{C['rr']}",f"=IF(ROUND({q('DRE Cruzeiro do Sul')}!B{C['rr']}-SUM(OR_VAL),2)=0,\"OK\",\"ATENÇÃO\")",'Com facial e corporal na partilha (premissa SIM). Impostos, cartão, estrutura, insumos e IRPJ/CSLL recalculados sobre R$ 60.150,00.'),
@@ -298,7 +300,7 @@ A=[('Total do relatório de transações = soma da aba Receitas CZS (valor no si
  ('1ª parte das consultas já está na base de ago/set',PRIOR_V,'ATENÇÃO','As 6 consultas tiveram a 1ª parte (R$ 400 cada) recebida em ago/set; está na base daqueles meses como receita da clínica. Com o valor total em outubro, retirar essas 6 entradas de ago/set no sistema (ou registrar como adiantamento) para a receita da clínica não contar duas vezes. A partilha de jul–set não muda: era 100% da clínica.'),
  ('Consulta de R$ 900: líquido maior que o bruto no cartão ELO','=SUMIFS(OR_SIS,OR_MET,"*ELO*")','ATENÇÃO','R$ 500 no cartão ELO (líquido R$ 586,56, maior que o bruto) + R$ 400 da 1ª parte via PIX em 04/09. Conferir a taxa no sistema.'),
  ('Receitas recebidas na conta de Rio Branco (atendimento em CZS)','=SUMIFS(OR_SIS,OR_CTA,"*Rio Branco*")','ATENÇÃO','PIX feitos para o CNPJ de Rio Branco. Entram na DRE de Cruzeiro do Sul (local do atendimento). Conferir com a contabilidade qual CNPJ emite a nota.'),
- ('Corporal da Maria Agaivide: R$ 10.000,00 considerado pago',10000,'ATENÇÃO','No sistema: R$ 5.000,00 via PIX na conta de Rio Branco, com a observação "duas vezes de 2.500,00 não cobrar". Por orientação da diretoria, o total de R$ 10.000,00 entra como pago. Conferir a entrada do saldo.'),
+ (f'Corporal de {NM(1)}: R$ 10.000,00 considerado pago',10000,'ATENÇÃO','No sistema: R$ 5.000,00 via PIX na conta de Rio Branco, com a observação "duas vezes de 2.500,00 não cobrar". Por orientação da diretoria, o total de R$ 10.000,00 entra como pago. Conferir a entrada do saldo.'),
  ('Antecipação do cartão de crédito: 8,74% sobre todas as vendas no crédito',f"=-{q('DRE Cruzeiro do Sul')}!B{C['a4']}",'OK',f'R$ 34.100,00 vendidos no crédito (parcelado R$ 33.600,00 + à vista R$ 500,00), todos antecipados: 8,74% = R$ 2.980,34. Taxa informada pela diretoria; substitui a média de 2,2%. O sistema mostra MDR de {fbr(33600-liq_parc)} nas vendas parceladas: confirmar se está dentro dos 8,74%.'),
  ('Passagens: rateio fecha com a fatura (R$ 6.836,55)','=V_PASS','=IF(V_CHK=0,"OK","ATENÇÃO")','9 lançamentos SMILES de 05 e 06/09 = R$ 6.836,55 (confere com a anotação). Rateio por dias: Cruzeiro do Sul R$ 5.127,41 + Rio Branco R$ 1.709,14 = R$ 6.836,55. Confirmar que nenhum bilhete é da visita de 22–28/09.'),
  ('2ª parcela do bilhete (PARC 02/02 · R$ 2.160)',2160,'PENDENTE','Vem na fatura de novembro. Entra no fechamento de novembro, com o mesmo rateio 75/25 desta viagem.'),
@@ -341,7 +343,7 @@ for t in ['Outubro é o primeiro mês com partilha 50/50. Esta planilha fecha Cr
  'Resumo outubro: Cruzeiro do Sul + Rio Branco + total do mês, com a parte da Dra. Patrícia.',
  'DRE Cruzeiro do Sul: receitas do relatório, impostos, cartão, insumos, passagens (rateadas), estrutura, amortização e IRPJ/CSLL, tudo por fórmula.',
  'Pacientes: consultas pelo valor total (R$ 800 / R$ 900) separadas dos procedimentos (tricologia, facial, pescoço, corporal) e o total de cada paciente.',
- 'Ajustes da diretoria (08/10): pescoço do José Railson R$ 8.100 (PIX, 05/10); corporal da Maria Agaivide considerado pago no total de R$ 10.000; antecipação de 8,74% sobre todas as vendas no cartão de crédito.',
+ f'Ajustes da diretoria (08/10): pescoço de {NM(0)} R$ 8.100 (PIX, 05/10); corporal de {NM(1)} considerado pago no total de R$ 10.000; antecipação de 8,74% sobre todas as vendas no cartão de crédito.',
  'Consultas: o sistema traz R$ 400 ou R$ 500 (2ª parte). Por orientação da diretoria, a consulta entra pelo valor total: R$ 400 → R$ 800 e R$ 500 → R$ 900 (premissa de complemento). A 1ª parte de cada uma está na base de ago/set e precisa sair de lá no sistema.',
  'Receitas CZS: os 40 lançamentos, com conta do plano, linha da DRE, alerta da auditoria e colunas para a Sra. Viviane conferir.',
  'Viagem: passagens da fatura do cartão (R$ 6.836,55) rateadas por dias, conferência do rateio, a 2ª parcela que fica para novembro e espaço para hotel e alimentação.',
@@ -360,7 +362,7 @@ for k in ('R1','R2','R3'):
 lines=[dict(p=x.Paciente,t=x.TIPO,lin=x.LIN,srv=x['Serviços'],desc=re.sub(r'^Procedimento:\s*','',str(x['Descrição'])),met=x['Método'],cta=('Rio Branco' if 'Rio Branco' in x.Conta else ('dinheiro CZS' if 'DINHEIRO' in x.Conta else 'Cruzeiro do Sul')),
             em=f"{x['Data de emissão']:%d/%m/%Y}",ve=f"{x['Data de vencimento']:%d/%m/%Y}",bx=('a receber' if pd.isna(x['Baixa']) else f"{x['Baixa']:%d/%m/%Y}"),man=(x.MAN=='SIM'),v=round(float(x.VC),2),vs=round(float(x.Valor),2),cmp=round(float(x.CMPV),2),liq=round(float(x['Valor líquido']),2),a=x.ALERTA) for _,x in o.iterrows()]
 alert_n=int((o.ALERTA!='').sum())
-data=dict(d=d,R=R,items=items,LN=LN,pass_=[list(x) for x in PASS],pass2=list(PASS2),p_fatura=P_FATURA,p_tot=P_TOT,rat=RAT,
+data=dict(adjn=[NM(0),NM(1)],d=d,R=R,items=items,LN=LN,pass_=[list(x) for x in PASS],pass2=list(PASS2),p_fatura=P_FATURA,p_tot=P_TOT,rat=RAT,
           ix=IX,n=len(o),n_sis=N_SIS,n_adj=N_ADJ,lines=lines,p_base=P_BASE,parc2=PARC2,alert_n=alert_n,liq_parc=round(liq_parc,2),dup=round(float(o[o.ALERTA.str.startswith('DUPLICIDADE')].Valor.sum()),2),
           rb_conta=round(float(o[o.Conta.str.contains('Rio Branco')].Valor.sum()),2),
           fat=[[x[0],x[1],x[4],x[5],x[7]] for x in FAT],
