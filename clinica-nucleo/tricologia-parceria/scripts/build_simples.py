@@ -1,9 +1,11 @@
 """Planilha simples para a Dra. Patrícia: fechamento de Cruzeiro do Sul (05–07/10/2026) com custo de sala.
 Uso: python3 -I build_simples.py <scratch> <saida.xlsx>"""
 import sys, json
+from datetime import time
 import pandas as pd, openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.worksheet.pagebreak import Break
 SP, OUT = sys.argv[1], sys.argv[2]
 O = json.load(open(SP + '/out/out26.json', encoding='utf-8'))
 b = pd.read_pickle(SP + '/ref/base_v2_out.pkl')
@@ -126,44 +128,67 @@ lab3(ws, r, 'Parte descontada neste fechamento'); edit(ws, r, 4, 1.0, '0%'); nam
 lab3(ws, r, 'PASSAGENS DESCONTADAS (vai para o Resumo)', F_CLI, 14); cell(ws, r, 4, '=ROUND(PASS_FAT*PASS_PCT,2)', BRL, True, F_CLI, 14); name('PASS_TOT', f"Passagens!$D${r}"); ws.row_dimensions[r].height = 30; r += 2
 note(ws, r, '100% = todas as passagens da fatura saem da receita de Cruzeiro do Sul. Se uma parte da viagem for cobrada no fechamento de Rio Branco, troque a porcentagem (o fechamento anterior usava 75%). O bilhete de R$ 2.160,00 foi parcelado em 2 vezes: a 2ª parcela vem na fatura de novembro.', 4)
 
-# ================= Custo da sala (cálculo detalhado)
+# ================= Custo da sala (cálculo detalhado, por hora)
 ws = wb['Custo da sala']
-setup(ws, [56, 20, 18, 64], 'Custo da sala — cálculo detalhado', 'Quanto custa usar uma sala da clínica de Cruzeiro do Sul por um dia de atendimento. Campos amarelos podem ser alterados.', landscape=True)
+setup(ws, [50, 18, 14, 14, 15, 18], 'Custo da sala — cálculo detalhado', 'Quanto custa usar uma sala da clínica de Cruzeiro do Sul por hora. Os valores em R$ são fixos; os campos amarelos (salas, dias e horas) podem ser alterados.', landscape=True)
+def obs(ws, r, text, fill=None, color='4A5F63', bold=False, size=11):
+    for c in range(3, 7): cell(ws, r, c, text if c == 3 else None, fill=fill, size=size, color=color, bold=bold, wrap=True)
+    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
+def hd3(ws, r, a, b, c):
+    head(ws, r, [a, b, c, None, None, None]); ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
+def step(ws, r, text):
+    x = ws.cell(r, 1, text); x.font = F(15, True, PET); ws.row_dimensions[r].height = 26
+HRS = '0.0" h"'
 r = 4
-ws.cell(r, 1, 'Passo 1 — Quanto custa manter a clínica de Cruzeiro do Sul funcionando por mês').font = F(15, True, PET); ws.row_dimensions[r].height = 26; r += 1
-x = ws.cell(r, 1, 'Valores por mês: média de julho a setembro/2026, tirada do relatório de transações do sistema.'); x.font = F(12, False, '4A5F63', True); r += 1
-head(ws, r, ['Despesa fixa da unidade', 'R$ por mês', '', 'Observação']); r += 1; c0 = r
+step(ws, r, 'Passo 1 — Quanto custa manter a clínica de Cruzeiro do Sul funcionando por mês'); r += 1
+note(ws, r, 'Valores por mês: média de julho a setembro/2026 (relatório de transações do sistema). São as despesas para a clínica abrir as portas. Não entram medicamentos, honorários de médicos, marketing nem retiradas dos sócios.', 6, 11); ws.row_dimensions[r].height = 30; r += 1
+hd3(ws, r, 'Despesa fixa da unidade', 'R$ por mês', 'Observação'); r += 1; c0 = r
 for lab, v in CF:
-    cell(ws, r, 1, lab, wrap=True); edit(ws, r, 2, v, BRL); cell(ws, r, 3, ''); cell(ws, r, 4, CF_NOTE.get(lab), size=11, color='4A5F63'); ws.row_dimensions[r].height = 26; r += 1
-cell(ws, r, 1, 'TOTAL — custo fixo mensal de Cruzeiro do Sul', bold=True, fill=F_TOT); cell(ws, r, 2, f'=SUM(B{c0}:B{r-1})', BRL, True, F_TOT); cell(ws, r, 3, '', fill=F_TOT); cell(ws, r, 4, '', fill=F_TOT)
-name('SALA_CF', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
-note(ws, r, 'São as despesas que existem para a clínica abrir as portas: aluguel, energia, equipe de apoio, limpeza, segurança, alvarás. Não entram medicamentos, honorários de médicos, marketing nem retiradas dos sócios.', 4, 11); r += 2
-ws.cell(r, 1, 'Passo 2 — Quantas salas a clínica tem e quanto tempo elas ficam disponíveis').font = F(15, True, PET); ws.row_dimensions[r].height = 26; r += 1
-head(ws, r, ['Item', 'Valor', '', 'Observação']); r += 1
-cell(ws, r, 1, 'Salas de atendimento em Cruzeiro do Sul'); edit(ws, r, 2, 4, '0'); cell(ws, r, 3, ''); cell(ws, r, 4, 'A CONFIRMAR: contar consultórios + salas de procedimento + soroterapia', size=11, color='B3382F', bold=True); name('SALA_N', f"{q('Custo da sala')}!$B${r}"); r += 1
-cell(ws, r, 1, 'Dias de funcionamento por mês'); edit(ws, r, 2, 22, '0'); cell(ws, r, 3, ''); cell(ws, r, 4, 'Dias úteis (planilha de precificação)', size=11, color='4A5F63'); name('SALA_DIAS', f"{q('Custo da sala')}!$B${r}"); r += 1
-cell(ws, r, 1, 'Horas de funcionamento por dia'); edit(ws, r, 2, 10, '0'); cell(ws, r, 3, ''); cell(ws, r, 4, 'Planilha de precificação', size=11, color='4A5F63'); name('SALA_H', f"{q('Custo da sala')}!$B${r}"); r += 1
-cell(ws, r, 1, 'Taxa de ocupação considerada'); edit(ws, r, 2, 0.65, '0%'); cell(ws, r, 3, ''); cell(ws, r, 4, 'Mesma taxa da planilha de precificação: as salas ficam ocupadas 65% do tempo e o custo do tempo vazio é dividido entre as horas usadas. Se colocar 100%, cobra só o tempo usado.', size=11, color='4A5F63', wrap=True)
-ws.row_dimensions[r].height = 52; name('SALA_OCUP', f"{q('Custo da sala')}!$B${r}"); r += 1
-cell(ws, r, 1, 'Salas-dia por mês (salas × dias × ocupação)', bold=True, fill=F_TOT); cell(ws, r, 2, '=SALA_N*SALA_DIAS*SALA_OCUP', '#,##0.0', True, F_TOT); cell(ws, r, 3, '', fill=F_TOT); cell(ws, r, 4, '', fill=F_TOT); name('SALA_SD', f"{q('Custo da sala')}!$B${r}"); r += 2
-ws.cell(r, 1, 'Passo 3 — Custo de uma sala').font = F(15, True, PET); ws.row_dimensions[r].height = 26; r += 1
-head(ws, r, ['Cálculo', 'R$', '', 'Como é feito']); r += 1
-cell(ws, r, 1, 'Custo de 1 sala por DIA', bold=True, fill=F_CLI); cell(ws, r, 2, '=ROUND(SALA_CF/SALA_SD,2)', BRL, True, F_CLI); cell(ws, r, 3, ''); cell(ws, r, 4, 'Custo fixo mensal ÷ salas-dia por mês', size=11, color='4A5F63'); name('SALA_DIA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
-cell(ws, r, 1, 'Custo de 1 sala por HORA'); cell(ws, r, 2, '=ROUND(SALA_DIA/SALA_H,2)', BRL); cell(ws, r, 3, ''); cell(ws, r, 4, 'Custo por dia ÷ horas de funcionamento', size=11, color='4A5F63'); r += 2
-ws.cell(r, 1, 'Passo 4 — Uso pela Dra. Patrícia em Cruzeiro do Sul (05 a 07/10)').font = F(15, True, PET); ws.row_dimensions[r].height = 26; r += 1
-head(ws, r, ['Item', 'Valor', '', 'Observação']); r += 1
-cell(ws, r, 1, 'Dias de atendimento'); edit(ws, r, 2, 3, '0'); cell(ws, r, 3, ''); cell(ws, r, 4, '05, 06 e 07/10', size=11, color='4A5F63'); name('USO_DIAS', f"{q('Custo da sala')}!$B${r}"); r += 1
-cell(ws, r, 1, 'Salas usadas por dia'); edit(ws, r, 2, 1, '0'); cell(ws, r, 3, ''); cell(ws, r, 4, 'Se ela usou consultório e sala de procedimento ao mesmo tempo, coloque 2', size=11, color='4A5F63', wrap=True); name('USO_SALAS', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 30; r += 1
-cell(ws, r, 1, 'TAXA DE OCUPAÇÃO DA SALA (vai para o Resumo)', bold=True, fill=F_CLI, size=14); cell(ws, r, 2, '=SALA_DIA*USO_DIAS*USO_SALAS', BRL, True, F_CLI, size=14); cell(ws, r, 3, '', fill=F_CLI)
-cell(ws, r, 4, 'Custo de 1 sala por dia × dias × salas', size=11, color='4A5F63', fill=F_CLI); name('SALA_TAXA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 30; r += 2
-ws.cell(r, 1, 'Para comparar: custo de 1 sala por dia conforme o nº de salas e a ocupação').font = F(13, True, PET); r += 1
-head(ws, r, ['Nº de salas na unidade', 'Ocupação 100%', 'Ocupação 80%', 'Ocupação 65%'], 28); r += 1
+    cell(ws, r, 1, lab); cell(ws, r, 2, v, BRL); obs(ws, r, CF_NOTE.get(lab)); ws.row_dimensions[r].height = 20; r += 1
+cell(ws, r, 1, 'TOTAL — custo fixo mensal de Cruzeiro do Sul', bold=True, fill=F_TOT); cell(ws, r, 2, f'=SUM(B{c0}:B{r-1})', BRL, True, F_TOT); obs(ws, r, None, F_TOT)
+name('SALA_CF', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 28; r += 1
+r += 1
+ws.row_breaks.append(Break(id=r - 1)); step(ws, r, 'Passo 2 — Quantas horas de sala a clínica tem por mês'); r += 1
+hd3(ws, r, 'Item', 'Quantidade', 'Observação'); r += 1
+cell(ws, r, 1, 'Salas de atendimento em Cruzeiro do Sul'); edit(ws, r, 2, 4, '0'); obs(ws, r, 'A CONFIRMAR: contar consultórios + salas de procedimento + soroterapia', color='B3382F', bold=True); ws.row_dimensions[r].height = 34; name('SALA_N', f"{q('Custo da sala')}!$B${r}"); r += 1
+cell(ws, r, 1, 'Dias de funcionamento por mês'); edit(ws, r, 2, 22, '0'); obs(ws, r, 'Dias úteis (planilha de precificação)'); name('SALA_DIAS', f"{q('Custo da sala')}!$B${r}"); r += 1
+cell(ws, r, 1, 'Horas de funcionamento por dia'); edit(ws, r, 2, 10, HRS); obs(ws, r, 'Planilha de precificação'); name('SALA_H', f"{q('Custo da sala')}!$B${r}"); r += 1
+cell(ws, r, 1, 'Taxa de ocupação considerada'); edit(ws, r, 2, 0.65, '0%')
+obs(ws, r, 'Mesma taxa da planilha de precificação: as salas ficam ocupadas 65% do tempo e o custo do tempo vazio é dividido entre as horas usadas. Se colocar 100%, cobra só o tempo usado.')
+ws.row_dimensions[r].height = 46; name('SALA_OCUP', f"{q('Custo da sala')}!$B${r}"); r += 1
+cell(ws, r, 1, 'Horas de sala ocupadas por mês', bold=True, fill=F_TOT); cell(ws, r, 2, '=SALA_N*SALA_DIAS*SALA_H*SALA_OCUP', HRS, True, F_TOT); obs(ws, r, 'Salas × dias × horas por dia × ocupação', F_TOT)
+name('SALA_HD', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 28; r += 2
+step(ws, r, 'Passo 3 — Custo de uma sala por hora'); r += 1
+hd3(ws, r, 'Cálculo', 'R$', 'Como é feito'); r += 1
+cell(ws, r, 1, 'Custo de 1 sala por HORA', bold=True, fill=F_CLI, size=14); cell(ws, r, 2, '=ROUND(SALA_CF/SALA_HD,2)', BRL, True, F_CLI, 14); obs(ws, r, 'Custo fixo mensal ÷ horas de sala ocupadas por mês', F_CLI)
+name('SALA_HORA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 30; r += 1
+cell(ws, r, 1, 'Custo de 1 sala por dia inteiro (para comparar)'); cell(ws, r, 2, '=ROUND(SALA_HORA*SALA_H,2)', BRL); obs(ws, r, 'Custo por hora × horas de funcionamento por dia'); r += 2
+ws.row_breaks.append(Break(id=r - 1)); step(ws, r, 'Passo 4 — Horas de uso pela Dra. Patrícia em Cruzeiro do Sul'); r += 1
+x = ws.cell(r, 1, 'Digite a entrada, a saída e quantas salas ela usou em cada dia. As horas se calculam sozinhas.'); x.font = F(12, False, '4A5F63', True); r += 1
+head(ws, r, ['Dia', 'Entrada', 'Saída', 'Horas no dia', 'Salas usadas', 'Horas de sala'], 34); r += 1; u0 = r
+USO = [('05/10/2026 — segunda-feira', time(8, 0), time(18, 30), 2), ('06/10/2026 — terça-feira', time(7, 0), time(17, 30), 2), ('07/10/2026 — quarta-feira', None, None, None)]
+for d, t0, t1, ns in USO:
+    cell(ws, r, 1, d, bold=True); edit(ws, r, 2, t0, 'hh:mm'); edit(ws, r, 3, t1, 'hh:mm')
+    for c in (2, 3): ws.cell(r, c).alignment = Alignment(horizontal='center', vertical='center')
+    cell(ws, r, 4, f'=IF(OR(B{r}="",C{r}=""),0,ROUND((C{r}-B{r})*24,2))', HRS, h='center'); edit(ws, r, 5, ns, '0'); ws.cell(r, 5).alignment = Alignment(horizontal='center', vertical='center')
+    cell(ws, r, 6, f'=D{r}*N(E{r})', HRS, True, h='center'); ws.row_dimensions[r].height = 28; r += 1
+cell(ws, r, 1, 'TOTAL', bold=True, fill=F_TOT); cell(ws, r, 2, None, fill=F_TOT); cell(ws, r, 3, None, fill=F_TOT)
+cell(ws, r, 4, f'=SUM(D{u0}:D{r-1})', HRS, True, F_TOT, h='center'); cell(ws, r, 5, None, fill=F_TOT); cell(ws, r, 6, f'=SUM(F{u0}:F{r-1})', HRS, True, F_TOT, h='center')
+name('USO_HS', f"{q('Custo da sala')}!$F${r}"); ws.row_dimensions[r].height = 28; r += 1
+note(ws, r, 'Horas de sala = horas no dia × salas usadas. Exemplo: 10,5 horas com 2 salas = 21 horas de sala. Se ela não atendeu na quarta-feira, deixe a linha em branco.', 6, 11); r += 2
+hd3(ws, r, 'Conta final', 'Valor', 'Como é feito'); r += 1
+cell(ws, r, 1, 'Horas de sala usadas'); cell(ws, r, 2, '=USO_HS', HRS); obs(ws, r, 'Total da tabela acima'); r += 1
+cell(ws, r, 1, 'Custo de 1 sala por hora'); cell(ws, r, 2, '=SALA_HORA', BRL); obs(ws, r, 'Passo 3'); r += 1
+cell(ws, r, 1, 'TAXA DE OCUPAÇÃO DA SALA', bold=True, fill=F_CLI, size=14); cell(ws, r, 2, '=ROUND(SALA_HORA*USO_HS,2)', BRL, True, F_CLI, 14)
+obs(ws, r, 'Custo por hora × horas de sala usadas · vai para o Resumo', F_CLI); name('SALA_TAXA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 32; r += 2
+ws.row_breaks.append(Break(id=r - 1)); x = ws.cell(r, 1, 'Para comparar: custo de 1 sala por hora conforme o nº de salas e a ocupação'); x.font = F(13, True, PET); r += 1
+head(ws, r, ['Nº de salas na unidade', 'Ocupação 100%', 'Ocupação 80%', 'Ocupação 65%'], 34); r += 1
 for n_ in (3, 4, 5, 6, 7):
-    cell(ws, r, 1, f'{n_} salas');
-    for c, oc in ((2, 1.0), (3, 0.8), (4, 0.65)): cell(ws, r, c, f'=SALA_CF/({n_}*SALA_DIAS*{oc})', BRL)
+    cell(ws, r, 1, f'{n_} salas')
+    for c, oc in ((2, 1.0), (3, 0.8), (4, 0.65)): cell(ws, r, c, f'=ROUND(SALA_CF/({n_}*SALA_DIAS*SALA_H*{oc}),2)', BRL)
     r += 1
 r += 1
-note(ws, r, 'Mesmo método da planilha "Precificação de Procedimentos" (custo fixo ÷ horas de sala ocupadas), agora com os custos reais de Cruzeiro do Sul. Os custos da administração central lançados em Rio Branco (sistema, jurídico, parte da contabilidade) não estão aqui.', 4, 11)
+note(ws, r, 'Mesmo método da planilha "Precificação de Procedimentos" (custo fixo ÷ horas de sala ocupadas), agora com os custos reais de Cruzeiro do Sul. Os custos da administração central lançados em Rio Branco (sistema, jurídico, parte da contabilidade) não estão aqui.', 6, 11)
 
 # ================= Despesas
 ws = wb['Despesas']
@@ -175,7 +200,7 @@ CST = [('1. PIS', '=FAT_TOT', 0.0065, 'Imposto federal sobre a receita bruta', '
        ('3. Antecipação do cartão', '=FAT_CRED', 0.0874, 'Custo para receber já as vendas parceladas no cartão. Todas as vendas no crédito foram antecipadas', 'C_ANT'),
        ('4. Insumos (material usado)', '=FAT_TOT', 0.0349, 'Ativos, seringas, luvas e descartáveis. Sem compra em outubro: índice da clínica', 'C_INS'),
        ('5. Passagens aéreas', None, None, 'Passagens da viagem (aba Passagens)', 'C_PASS'),
-       ('6. Taxa de ocupação da sala', None, None, 'Uso das salas da clínica nos dias de atendimento (aba Custo da sala)', 'C_SALA'),
+       ('6. Taxa de ocupação da sala', None, None, 'Custo de 1 sala por hora × horas de sala usadas: 2 salas na segunda e na terça (aba Custo da sala)', 'C_SALA'),
        ('7. IRPJ e CSLL — consultas', '=FAT_CONS', 0.0768, 'Impostos sobre o lucro das consultas', 'C_IRC'),
        ('7. IRPJ e CSLL — procedimentos', '=FAT_TRI+FAT_FAC+FAT_PES+FAT_COR', 0.0228, 'Impostos sobre o lucro dos procedimentos (tricologia, facial, pescoço e corporal)', 'C_IRP')]
 r = 5; k0 = r
@@ -209,7 +234,7 @@ line(ws, r, 'RECEITA BRUTA TOTAL', f'=SUM(B{r0}:B{r-1})', 'Tudo o que os atendim
 sec(ws, r, 'DESPESAS (descontadas da receita bruta)'); r += 1; d0 = r
 DSP = [('1. PIS e COFINS', '=C_PIS+C_COF', 'Impostos federais sobre a receita'), ('2. Taxa do cartão (maquininha)', '=C_MDR', 'Cobrada nas vendas no cartão de crédito'),
        ('3. Antecipação do cartão', '=C_ANT', 'Para receber já as vendas parceladas'), ('4. Insumos', '=C_INS', 'Material usado nos atendimentos'),
-       ('5. Passagens aéreas', '=C_PASS', 'Viagem São Paulo – Acre – São Paulo'), ('6. Taxa de ocupação da sala', '=C_SALA', 'Uso das salas da clínica (aba Custo da sala)'),
+       ('5. Passagens aéreas', '=C_PASS', 'Viagem São Paulo – Acre – São Paulo'), ('6. Taxa de ocupação da sala', '=C_SALA', 'Horas de uso das salas (aba Custo da sala)'),
        ('7. IRPJ e CSLL', '=C_IRC+C_IRP', 'Impostos sobre o lucro')]
 for lab, f, oq in DSP: line(ws, r, '   ' + lab, f, oq); r += 1
 line(ws, r, 'TOTAL DAS DESPESAS', f'=SUM(B{d0}:B{r-1})', 'Soma das 7 despesas', 't'); td = r; r += 2
@@ -239,7 +264,7 @@ TXT = [('1', 'Receitas: relatório de transações do sistema de 05 a 07/10/2026
        ('5', 'Antecipação (8,74%): taxa informada pela diretoria. Todas as vendas no cartão de crédito de outubro foram antecipadas.'),
        ('6', 'Insumos (3,49%): não houve compra de material em outubro. O índice vem das compras de ago–set (R$ 6.281,73) sobre a receita da tricologia nesses meses (R$ 179.877,00). Quando houver nota fiscal, troque pela taxa real.'),
        ('7', 'Passagens: os 9 lançamentos Smiles da fatura do cartão de 05/10/2026, total de R$ 6.836,55, descontados por inteiro. A 2ª parcela de R$ 2.160,00 vem na fatura de novembro.'),
-       ('8', 'Taxa de ocupação da sala: custo fixo mensal de Cruzeiro do Sul (média de jul–set/2026, R$ 21.892,52) ÷ (salas × dias de funcionamento × ocupação) = custo de 1 sala por dia. Esse valor × dias de atendimento × salas usadas. Mesmo método da planilha de precificação. Detalhes na aba "Custo da sala".'),
+       ('8', 'Taxa de ocupação da sala: custo fixo mensal de Cruzeiro do Sul (média de jul–set/2026, R$ 21.892,52) ÷ horas de sala ocupadas no mês (salas × dias × horas por dia × ocupação) = custo de 1 sala por hora. Esse valor × horas de sala usadas pela Dra. Patrícia (2 salas: segunda das 08h às 18h30 e terça das 07h às 17h30 = 42 horas de sala). Mesmo método da planilha de precificação. Detalhes na aba "Custo da sala".'),
        ('9', 'IRPJ e CSLL: Lucro Presumido. Consultas: 7,68% (32% × 24%). Procedimentos: 2,28% (8% × 15% + 12% × 9%).')]
 r = 4
 for k, t in TXT:
