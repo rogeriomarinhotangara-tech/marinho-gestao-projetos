@@ -61,26 +61,52 @@ def det_key(r):
     return clean(r['Descrição'])
 b['DK']=b.apply(det_key,axis=1)
 GORD=['Receita Operacional Bruta','Outras Receitas Operacionais','Deduções da Receita','Custos Diretos']+OPEX+['Despesas Financeiras','Tributos sobre Lucro']+[f[0] for f in FORA]
+def detail(cs,code,gg,tipo):
+    det={}
+    for m,ms in cs.groupby('Mes'):
+        if sens(code,gg) and tipo=='Despesa':
+            det[str(m)]=dict(mask=1,n=int(len(ms))); continue
+        a=ms.groupby('DK')['SV'].agg(['sum','count']).sort_values('sum',ascending=False)
+        top=[[k,round(float(v['sum']),2),int(v['count'])] for k,v in a.head(8).iterrows()]
+        rest=a.iloc[8:]
+        if len(rest): top.append(['Outros ('+str(int(rest['count'].sum()))+' lançamentos)',round(float(rest['sum'].sum()),2),int(rest['count'].sum())])
+        det[str(m)]=dict(items=top,n=int(len(ms)))
+    return det
+def mvs(df):
+    s_=df.groupby('Mes')['SV'].sum(); return [round(float(s_.get(m,0)),2) for m in MESES]
+def conta_obj(code,cs,gg,tipo):
+    return dict(c=str(code),n=str(cs['Conta analítica'].iloc[0]),v=mvs(cs),est=mvs(cs[cs.Estrutura=='SIM']),d=detail(cs,code,gg,tipo))
+b['SV']=b['Valor']
 raz=[]
 for gg in GORD:
     sub=b[b.Grupo==gg]
     if sub.empty: continue
     tipo='Receita' if gg in ('Receita Operacional Bruta','Outras Receitas Operacionais') else 'Despesa'
     sub=sub[sub['T']==tipo]
-    contas=[]
-    for code,cs in sub.groupby('Código'):
-        det={}
-        for m,ms in cs.groupby('Mes'):
-            if sens(code,gg) and tipo=='Despesa':
-                det[str(m)]=dict(mask=1,n=int(len(ms))); continue
-            a=ms.groupby('DK')['Valor'].agg(['sum','count']).sort_values('sum',ascending=False)
-            top=[[k,round(float(v['sum']),2),int(v['count'])] for k,v in a.head(8).iterrows()]
-            rest=a.iloc[8:]
-            if len(rest): top.append(['Outros ('+str(int(rest['count'].sum()))+' lançamentos)',round(float(rest['sum'].sum()),2),int(rest['count'].sum())])
-            det[str(m)]=dict(items=top,n=int(len(ms)))
-        contas.append(dict(c=str(code),n=str(cs['Conta analítica'].iloc[0]),v=mv(cs),est=mv(cs[cs.Estrutura=='SIM']),d=det))
+    contas=[conta_obj(code,cs,gg,tipo) for code,cs in sub.groupby('Código')]
     contas.sort(key=lambda x:-sum(x['v']))
     raz.append(dict(g=gg,tipo=tipo,dre=not gg.endswith('Não DRE'),v=mv(sub),contas=contas))
+# receita por unidade × conta
+uni_c={}
+for u in ['Rio Branco','Cruzeiro do Sul','Epitaciolândia']:
+    sub=b[(b.Grupo=='Receita Operacional Bruta')&(b['T']=='Receita')&(b.Unidade==u)]
+    cl=[conta_obj(code,cs,'Receita Operacional Bruta','Receita') for code,cs in sub.groupby('Código')]
+    uni_c[u]=sorted(cl,key=lambda x:-sum(x['v']))
+# razão da tricologia por linha da DRE da parceria
+TL=[('R1 Consultas','Receita','Consultas da Dra. Patrícia'),('R2 Procedimentos de tricologia','Receita','Procedimentos de tricologia'),
+    ('R3 Facial e corporal (Dra. Patrícia)','Receita','Facial e corporal da Dra. Patrícia'),('C1 Insumos e ativos','Despesa','Insumos e ativos'),
+    ('D1 Viagens e deslocamento','Despesa','Viagens e estadia'),('D2 Marketing da tricologia','Despesa','Marketing da tricologia'),
+    ('D3 Outras despesas diretas','Despesa','Outras despesas diretas'),('X1 Equipamentos (CAPEX)','Despesa','Aparelhos (investimento)'),
+    ('X2 Consultoria de implantação','Despesa','Consultoria de implantação')]
+tri={}
+tb=b[b.Tricologia=='SIM'].copy()
+for key,tipo,lab in TL:
+    sub=tb[tb['Linha trico']==key].copy()
+    sub['SV']=sub['Valor'].where(sub['T']==tipo,-sub['Valor'])
+    cl=[conta_obj(code,cs,'Tricologia',tipo) for code,cs in sub.groupby('Código')]
+    tri[key[:2]]=dict(l=lab,tipo=tipo,contas=sorted(cl,key=lambda x:-sum(x['v'])))
+assert abs(sum(sum(c['v']) for c in tri['X1']['contas'])-21139.82)<0.02
+assert abs(sum(sum(c['v']) for c in tri['C1']['contas'])-19898.07)<0.02
 # ------------- estrutura
 est=b[(b['T']=='Despesa')&(b.Estrutura=='SIM')]
 est_g={gg:mv(est[est.Grupo==gg]) for gg in est.Grupo.unique()}
@@ -98,7 +124,7 @@ for r in range(9,44):
     if lab and t.cell(r,2).value is not None:
         P[str(r)]=[lab]+[(round(t.cell(r,c).value,2) if isinstance(t.cell(r,c).value,(int,float)) else t.cell(r,c).value) for c in range(2,6)]
 assert abs(P['35'][4]-109897.12)<0.01, P['35']
-data=dict(meses=MESES,dre=L,fora=fora,razao=raz,est_g=est_g,est_tot=est_tot,uni=uni,
+data=dict(meses=MESES,dre=L,fora=fora,razao=raz,est_g=est_g,est_tot=est_tot,uni=uni,uni_c=uni_c,tri=tri,
           parc=dict(dre=P,cash=old['cash'],rev=old['rev']),
           checks=dict(ebitda=ebitda,rob=rob))
 json.dump(data,open(OUT,'w'),ensure_ascii=False,separators=(',',':'))
