@@ -6,6 +6,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter as L
 SP=sys.argv[1]; sys.path.insert(0,SP+'/scripts'); OUT=sys.argv[2]; JS=sys.argv[3]
 from xl_style import *
+from openpyxl.styles import PatternFill
 o=pd.read_excel(SP+'/data4/czs_out.xlsx')
 b=pd.read_pickle(SP+'/ref/base_v2_out.pkl')
 def fbr(v): return 'R$ '+f'{v:,.2f}'.replace(',','X').replace('.',',').replace('X','.')
@@ -35,7 +36,11 @@ def alerts(r):
     if 'COBRAR' in nz(r['Observações']): a.append('Observação do sistema: "duas vezes de 2.500,00 não cobrar". Conferir se não há cobrança em dobro.')
     return ' | '.join(a)
 o['ALERTA']=o.apply(alerts,axis=1)
-o=o.sort_values(['LIN','Paciente','Descrição']).reset_index(drop=True)
+o['TIPO']=o.LIN.map(lambda k:'Consulta' if k=='R1' else 'Procedimento')
+assert set(o[o.TIPO=='Consulta'].Valor.round(2))<={400.0,500.0} and not o[o.TIPO=='Procedimento'].Valor.round(2).isin([400,500]).any()
+_pn=o['Descrição'].astype(str).str.extract(r'\((\d+)/(\d+)\)\s*$'); o['PARC_N']=pd.to_numeric(_pn[0]).fillna(0); o['PARC_T']=pd.to_numeric(_pn[1]).fillna(0)
+o['_t']=o.TIPO.map({'Consulta':0,'Procedimento':1})
+o=o.sort_values(['_t','Serviços','Paciente','PARC_N']).reset_index(drop=True)
 # ------------- índices (os mesmos da calculadora)
 IX=dict(pis=.0065,cof=.03,iss=0.0,cart=.022,est=0.184628712949474,ins=.0349,irc=.0768,irp=.0228,amort=61139.78/24,pat=.5)
 DIAS_CZS,DIAS_RB=3,1; RAT=DIAS_CZS/(DIAS_CZS+DIAS_RB)
@@ -46,12 +51,12 @@ PASS=[('05/09/2026','SMILES FIDEL*BILHETE','BARUERI','',1595.00),('05/09/2026','
  ('06/09/2026','SMILES FIDEL*BILHETE','BARUERI','PARC 01/02',2160.00)]
 PASS2=('—','SMILES FIDEL*BILHETE — 2ª parcela (PARC 02/02), vem na fatura de nov/26','BARUERI','PARC 02/02',2160.00)
 P_FATURA=round(sum(x[4] for x in PASS),2); assert abs(P_FATURA-6836.55)<0.005
-P_TOT=round(P_FATURA+PASS2[4],2)
+P_TOT=round(P_FATURA+PASS2[4],2); PARC2='NÃO'; P_BASE=P_FATURA if PARC2=='NÃO' else P_TOT
 # ------------- DRE CZS em Python (conferência das fórmulas e dados do painel)
 R={k:round(float(o[o.LIN==k].Valor.sum()),2) for k in ('R1','R2','R3')}; REC=sum(R.values())
 assert abs(REC-57750)<0.005 and abs(o.Valor.sum()-REC)<0.005
 d=dict(rec=REC,r1=R['R1'],r2=R['R2'],r3=R['R3'],pis=REC*IX['pis'],cof=REC*IX['cof'],iss=REC*IX['iss'],cart=REC*IX['cart'],
-       ins=REC*IX['ins'],pass_=P_TOT*RAT,loc=0.0,out=0.0,est=REC*IX['est'],am=IX['amort']*RAT,irc=R['R1']*IX['irc']+(R['R2']+R['R3'])*IX['irp'])
+       ins=REC*IX['ins'],pass_=P_BASE*RAT,loc=0.0,out=0.0,est=REC*IX['est'],am=IX['amort']*RAT,irc=R['R1']*IX['irc']+(R['R2']+R['R3'])*IX['irp'])
 d['rl']=REC-d['pis']-d['cof']-d['iss']-d['cart']; d['ebitda']=d['rl']-d['ins']-d['pass_']-d['loc']-d['out']-d['est']
 d['res']=d['ebitda']-d['am']-d['irc']; d['base']=max(0,d['res']); d['pat']=d['base']*IX['pat']; d['cli']=d['base']-d['pat']; d['clitot']=d['cli']+d['est']+d['am']
 met=o.groupby('Método').Valor.sum(); d['parc']=float(o[o['Método'].str.contains('parcelado',case=False)].Valor.sum())
@@ -60,7 +65,7 @@ d={k:round(v,2) for k,v in d.items()}
 print('DRE CZS', d)
 # ------------- workbook
 wb=openpyxl.Workbook(); wb.active.title='Leia-me'
-SH=['Resumo outubro','DRE Cruzeiro do Sul','DRE Rio Branco','Receitas CZS','Viagem','Premissas','Fatura cartão 05-10','Auditoria']
+SH=['Resumo outubro','DRE Cruzeiro do Sul','DRE Rio Branco','Pacientes','Receitas CZS','Viagem','Premissas','Fatura cartão 05-10','Auditoria']
 for s in SH: wb.create_sheet(s)
 def q(s): return "'"+s+"'"
 def name(n,ref): wb.defined_names[n]=DefinedName(n,attr_text=ref)
@@ -74,7 +79,7 @@ PR=[('O_PIS','PIS',IX['pis'],PCT2,'Lei, Lucro Presumido.'),('O_COF','COFINS',IX[
  ('O_IRC','IRPJ + CSLL — consultas',IX['irc'],PCT2,'32% × 24%.'),('O_IRP','IRPJ + CSLL — procedimentos',IX['irp'],PCT2,'8% × 15% + 12% × 9%.'),
  ('O_AMORT','Amortização do investimento (R$ por mês)',IX['amort'],NUM,'R$ 61.139,78 ÷ 24. Parcela 1 de 24 (out/26).'),('O_PAT','Parte da Dra. Patrícia',IX['pat'],PCT,'50/50.'),
  ('O_FC','Facial e corporal da Dra. Patrícia entram na partilha? (SIM/NÃO)','SIM',None,'Decisão pendente da diretoria. Hoje: SIM.'),
- ('O_PARC2','Incluir a 2ª parcela do bilhete (R$ 2.160, fatura de nov/26) no custo desta viagem? (SIM/NÃO)','SIM',None,'O bilhete de R$ 4.320 foi parcelado em 2×. A viagem é de outubro: o custo inteiro é de outubro.'),
+ ('O_PARC2','Incluir já a 2ª parcela do bilhete (R$ 2.160, fatura de nov/26)? (SIM/NÃO)','NÃO',None,'NÃO: o rateio fecha com a fatura de 05/10 (R$ 6.836,55) e a 2ª parcela entra quando vier na fatura de novembro. SIM: soma agora os R$ 2.160 (custo total da viagem R$ 8.996,55).'),
  ('O_DCZS','Dias de atendimento em Cruzeiro do Sul',DIAS_CZS,NUM0,'05, 06 e 07/10.'),('O_DRB','Dias de atendimento em Rio Branco',DIAS_RB,NUM0,'08/10.')]
 r=4
 for nm,lab,v,fmt,nt in PR:
@@ -85,24 +90,27 @@ for c_ in ('B14','B15'):
     dv=DataValidation(type='list',formula1='"SIM,NÃO"',allow_blank=False); ws.add_data_validation(dv); dv.add(c_)
 # Receitas CZS
 ws=wb['Receitas CZS']; title(ws,'Receitas de Cruzeiro do Sul — 05 a 07/10/2026 (relatório de transações)','40 lançamentos, todos da Dra. Patrícia. Colunas Q a S: conferência da Sra. Viviane.')
-H=['Nº','Emissão','Vencimento','Baixa','Paciente','Descrição (sistema)','Serviço (sistema)','Forma de pagamento','Conta bancária','Valor (R$)','Valor líquido (R$)','Observação no sistema','Código','Conta do plano','Linha da DRE','Entra na partilha?','Alerta da auditoria','Confere? SIM/NÃO','Observação (Viviane)']
-for col,w in zip(range(1,20),[5,11,11,11,30,38,26,30,34,12,12,36,12,32,9,11,60,11,30]): ws.column_dimensions[L(col)].width=w
+H=['Nº','Tipo','Emissão','Vencimento','Baixa','Paciente','Descrição (sistema)','Serviço (sistema)','Forma de pagamento','Conta bancária','Valor (R$)','Valor líquido (R$)','Observação no sistema','Código','Conta do plano','Linha da DRE','Entra na partilha?','Alerta da auditoria','Confere? SIM/NÃO','Observação (Viviane)']
+for col,w in zip(range(1,21),[5,13,11,11,11,30,38,26,30,34,12,12,36,12,32,9,11,60,11,30]): ws.column_dimensions[L(col)].width=w
 hdr(ws,4,1,H); r0=5
 for i,x in o.iterrows():
     r=r0+i
-    vals=[i+1,x['Data de emissão'].to_pydatetime(),x['Data de vencimento'].to_pydatetime(),x['Baixa'].to_pydatetime(),x['Paciente'],x['Descrição'],x['Serviços'],x['Método'],x['Conta'],float(x.Valor),float(x['Valor líquido']),
-          (x['Observações'] if pd.notna(x['Observações']) else None),x.COD,x.CONTA_N,x.LIN,f'=IF(O{r}="R3",IF(O_FC="SIM","SIM","NÃO"),"SIM")',x.ALERTA or None]
+    vals=[i+1,x.TIPO,x['Data de emissão'].to_pydatetime(),x['Data de vencimento'].to_pydatetime(),x['Baixa'].to_pydatetime(),x['Paciente'],x['Descrição'],x['Serviços'],x['Método'],x['Conta'],float(x.Valor),float(x['Valor líquido']),
+          (x['Observações'] if pd.notna(x['Observações']) else None),x.COD,x.CONTA_N,x.LIN,f'=IF(P{r}="R3",IF(O_FC="SIM","SIM","NÃO"),"SIM")',x.ALERTA or None]
+    tf=PatternFill('solid',fgColor='E3EEF9') if x.TIPO=='Consulta' else None
     for c,v in enumerate(vals,start=1):
-        fmt=DATE if c in (2,3,4) else (NUM if c in (10,11) else None)
-        put(ws,r,c,v,fmt=fmt,border=B_ALL,align=WRAP if c in (6,12,17) else None,fill=F_WARN if (c==17 and v) else None)
-    inp(ws,r,18,None); inp(ws,r,19,None)
+        fmt=DATE if c in (3,4,5) else (NUM if c in (11,12) else None)
+        put(ws,r,c,v,fmt=fmt,border=B_ALL,align=WRAP if c in (7,13,18) else None,fill=F_WARN if (c==18 and v) else tf,font=FT_B if c==2 else FT_N)
+    inp(ws,r,19,None); inp(ws,r,20,None)
 rN=r0+len(o)-1
-dv=DataValidation(type='list',formula1='"SIM,NÃO"',allow_blank=True); ws.add_data_validation(dv); dv.add(f'R{r0}:R{rN}')
-put(ws,rN+1,9,'Total',font=FT_B,fill=F_TOT,border=B_ALL); put(ws,rN+1,10,f'=SUM(J{r0}:J{rN})',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL); put(ws,rN+1,11,f'=SUM(K{r0}:K{rN})',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL)
-put(ws,rN+1,17,f'=COUNTIF(Q{r0}:Q{rN},"?*")&" lançamentos com alerta"',font=FT_B)
-put(ws,rN+1,18,f'=COUNTIF(R{r0}:R{rN},"SIM")&" ok / "&COUNTIF(R{r0}:R{rN},"NÃO")&" div."',font=FT_B)
-for nm,col in [('OR_VAL','J'),('OR_LIQ','K'),('OR_MET','H'),('OR_LIN','O'),('OR_CTA','I'),('OR_ALE','Q')]: name(nm,f"{q('Receitas CZS')}!${col}${r0}:${col}${rN}")
-ws.freeze_panes='F5'; ws.auto_filter.ref=f'A4:S{rN}'
+dv=DataValidation(type='list',formula1='"SIM,NÃO"',allow_blank=True); ws.add_data_validation(dv); dv.add(f'S{r0}:S{rN}')
+put(ws,rN+1,10,'Total',font=FT_B,fill=F_TOT,border=B_ALL); put(ws,rN+1,11,f'=SUM(K{r0}:K{rN})',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL); put(ws,rN+1,12,f'=SUM(L{r0}:L{rN})',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL)
+put(ws,rN+1,18,f'=COUNTIF(R{r0}:R{rN},"?*")&" lançamentos com alerta"',font=FT_B)
+put(ws,rN+1,19,f'=COUNTIF(S{r0}:S{rN},"SIM")&" ok / "&COUNTIF(S{r0}:S{rN},"NÃO")&" div."',font=FT_B)
+for k_,(lab_,tp_) in enumerate([('Consultas (R$ 400 e R$ 500)','Consulta'),('Procedimentos','Procedimento')]):
+    put(ws,rN+2+k_,10,lab_,border=B_ALL,font=FT_B); put(ws,rN+2+k_,11,f'=SUMIFS(K{r0}:K{rN},B{r0}:B{rN},"{tp_}")',fmt=NUM,border=B_ALL,font=FT_B); put(ws,rN+2+k_,12,f'=COUNTIF(B{r0}:B{rN},"{tp_}")&" lançamentos"',border=B_ALL)
+for nm,col in [('OR_VAL','K'),('OR_LIQ','L'),('OR_MET','I'),('OR_LIN','P'),('OR_CTA','J'),('OR_ALE','R'),('OR_TIPO','B'),('OR_PAC','F'),('OR_SRV','H')]: name(nm,f"{q('Receitas CZS')}!${col}${r0}:${col}${rN}")
+ws.freeze_panes='G5'; ws.auto_filter.ref=f'A4:T{rN}'
 # Viagem
 ws=wb['Viagem']; title(ws,'Viagem da Dra. Patrícia — outubro/2026: São Paulo → Cruzeiro do Sul → Rio Branco → São Paulo','Passagens pagas no cartão da clínica (Mastercard final 5917, fatura de 05/10/2026). Regra: a clínica paga e desconta da receita da tricologia.')
 for col,w in zip('ABCDEFG',[12,58,12,12,14,12,40]): ws.column_dimensions[col].width=w
@@ -114,9 +122,12 @@ for c,v in enumerate([PASS2[0],PASS2[1],PASS2[2],PASS2[3],PASS2[4]],start=1): pu
 put(ws,r,6,'=O_PARC2',border=B_ALL,fill=F_PART); put(ws,r,7,'Estimada: confirmar na fatura de novembro',font=FT_NOTE); r+=1; v1=r-1
 dv=DataValidation(type='list',formula1='"SIM,NÃO"',allow_blank=False); ws.add_data_validation(dv); dv.add(f'F{v0}:F{v1-1}')
 put(ws,r,2,'Passagens já pagas na fatura de 05/10',border=B_ALL); put(ws,r,5,f'=SUMIFS(E{v0}:E{v1-1},F{v0}:F{v1-1},"SIM")',fmt=NUM,border=B_ALL); r+=1
-put(ws,r,2,'Total das passagens desta viagem',font=FT_B,fill=F_TOT,border=B_ALL); put(ws,r,5,f'=SUMIFS(E{v0}:E{v1},F{v0}:F{v1},"SIM")',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL); name('V_PASS',f"{q('Viagem')}!$E${r}"); rp=r; r+=1
-put(ws,r,2,'→ Cruzeiro do Sul (rateio por dias de atendimento)',border=B_ALL); put(ws,r,4,'=O_RAT',fmt=PCT,border=B_ALL); put(ws,r,5,f'=E{rp}*O_RAT',fmt=NUM,border=B_ALL); r+=1
-put(ws,r,2,'→ Rio Branco',border=B_ALL); put(ws,r,4,'=1-O_RAT',fmt=PCT,border=B_ALL); put(ws,r,5,f'=E{rp}*(1-O_RAT)',fmt=NUM,border=B_ALL); r+=2
+put(ws,r,2,'Passagens que entram no rateio de outubro',font=FT_B,fill=F_TOT,border=B_ALL); put(ws,r,5,f'=SUMIFS(E{v0}:E{v1},F{v0}:F{v1},"SIM")',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL); name('V_PASS',f"{q('Viagem')}!$E${r}"); rp=r; r+=1
+put(ws,r,2,'→ Cruzeiro do Sul: 3 de 4 dias de atendimento (05, 06 e 07/10)',border=B_ALL); put(ws,r,4,'=O_RAT',fmt=PCT,border=B_ALL); put(ws,r,5,f'=ROUND(E{rp}*O_RAT,2)',fmt=NUM,border=B_ALL); rc=r; r+=1
+put(ws,r,2,'→ Rio Branco: 1 de 4 dias de atendimento (08/10)',border=B_ALL); put(ws,r,4,'=1-O_RAT',fmt=PCT,border=B_ALL); put(ws,r,5,f'=E{rp}-E{rc}',fmt=NUM,border=B_ALL); r+=1
+put(ws,r,2,'Conferência: Cruzeiro do Sul + Rio Branco − passagens do rateio (deve ser zero)',border=B_ALL,font=FT_B); put(ws,r,5,f'=ROUND(E{rc}+E{rc+1}-E{rp},2)',fmt=NUM,border=B_ALL,font=FT_B); name('V_CHK',f"{q('Viagem')}!$E${r}"); r+=1
+put(ws,r,2,'2ª parcela (R$ 2.160): entra no fechamento de novembro, quando vier na fatura, com o mesmo rateio 75/25',font=FT_NOTE); r+=2
+name('V_CZS',f"{q('Viagem')}!$E${rc}"); name('V_RB',f"{q('Viagem')}!$E${rc+1}")
 put(ws,r,1,'Hotel, alimentação e transporte local (preencher com os comprovantes)',font=FT_T2); r+=1
 hdr(ws,r,1,['Unidade','Despesa','','','Valor (R$)','','Comprovante']); r+=1; h0=r
 for u,lab in [('Cruzeiro do Sul','Hotel'),('Cruzeiro do Sul','Alimentação'),('Cruzeiro do Sul','Transporte local / transfer'),('Rio Branco','Hotel'),('Rio Branco','Alimentação'),('Rio Branco','Transporte local / transfer')]:
@@ -151,7 +162,7 @@ def dre(ws,unit,rec_src,loc_rng,rat_expr,ins_cell_note):
     rl=row('(=) Receita líquida',f'=SUM(B{rr}:B{a4})','t')
     ins_in=row('Insumos comprados no mês (R$) — vazio = índice',None,'in',ins_cell_note)
     ins=row('(−) Insumos e ativos',f'=-IF(B{ins_in}="",B{rr}*O_INS,B{ins_in})','n','Sem compra no mês: consumo estimado do estoque pelo índice de 3,49%')
-    ps=row('(−) Passagens aéreas (rateio da viagem)',f'=-V_PASS*{rat_expr}','n','Aba Viagem: total das passagens × rateio por dias de atendimento')
+    ps=row('(−) Passagens aéreas (rateio da viagem)','=-V_CZS' if rat_expr=='O_RAT' else '=-V_RB','n','Aba Viagem: passagens da fatura de 05/10 × rateio por dias de atendimento')
     lc=row('(−) Hotel, alimentação e transporte local',f'=-SUM({loc_rng})','n','Aba Viagem (comprovantes)')
     ot=row('(−) Outras despesas diretas',0,'in','Recepção e ambientação dos dias de atendimento, se houver')
     put(ws,ot,2,0,fmt=NUM,border=B_ALL,fill=F_IN,font=FT_IN)
@@ -201,7 +212,7 @@ put(ws,r,1,'Dra. Patrícia — % do faturamento',border=B_ALL); put(ws,r,4,f'=IF
 put(ws,r,1,'Situação',font=FT_T2); r+=1
 for t in ['Cruzeiro do Sul: fechado com o relatório de 05 a 07/10 (40 lançamentos, R$ 57.750,00). Alertas na aba Auditoria.',
           'Rio Branco: aguardando o relatório de 08/10. Já carrega 25% das passagens e da amortização.',
-          'Passagens: R$ 6.836,55 na fatura de 05/10 + R$ 2.160,00 da 2ª parcela (fatura de nov/26) = R$ 8.996,55.']:
+          'Passagens: R$ 6.836,55 na fatura de 05/10, rateadas por dias: Cruzeiro do Sul R$ 5.127,41 (75%) + Rio Branco R$ 1.709,14 (25%) = R$ 6.836,55. A 2ª parcela do bilhete (R$ 2.160) entra em novembro.']:
     put(ws,r,1,'• '+t,align=WRAP); ws.merge_cells(start_row=r,start_column=1,end_row=r,end_column=5); ws.row_dimensions[r].height=28; r+=1
 # Fatura
 ws=wb['Fatura cartão 05-10']; title(ws,'Fatura Mastercard final 5917 — fechamento 28/09/2026, vencimento 05/10/2026 — classificação proposta','Pela regra, fatura de cartão não é rateada: cada item vai para a sua conta. Anotações à mão da foto na coluna G.')
@@ -248,14 +259,17 @@ hdr(ws,4,1,['#','Verificação','Valor','Status','Detalhe e ação'])
 liq_parc=float(o[o['Método'].str.contains('parcelado',case=False)]['Valor líquido'].sum())
 A=[('Total do relatório de transações = soma da aba Receitas CZS','=SUM(OR_VAL)','=IF(ROUND(SUM(OR_VAL)-57750,2)=0,"OK","ATENÇÃO")','40 lançamentos, R$ 57.750,00, conferido ao centavo.'),
  ('Todas as receitas classificadas em uma linha da DRE','=COUNTA(OR_LIN)','=IF(COUNTA(OR_LIN)=40,"OK","ATENÇÃO")','Tricologia R2 (30), consultas R1 (6), facial e corporal R3 (4). Nenhuma receita fora da DRE.'),
+ ('Consultas = todas as receitas de R$ 400 e R$ 500','=SUMIFS(OR_VAL,OR_TIPO,"Consulta")','=IF(AND(COUNTIFS(OR_TIPO,"Consulta")=COUNTIF(OR_VAL,400)+COUNTIF(OR_VAL,500),SUMIFS(OR_VAL,OR_TIPO,"Consulta")=SUMIFS(OR_VAL,OR_LIN,"R1")),"OK","ATENÇÃO")','6 consultas (5 × R$ 400 + 1 × R$ 500) = R$ 2.500, na conta 1.01.03.001. Os outros 34 lançamentos (R$ 55.250) são procedimentos. No sistema todas aparecem como "Procedimento: nome"; a separação é pelo serviço e pelo valor.'),
  ('DRE de Cruzeiro do Sul: faturamento = total do relatório',f"={q('DRE Cruzeiro do Sul')}!B{C['rr']}",f"=IF(ROUND({q('DRE Cruzeiro do Sul')}!B{C['rr']}-SUM(OR_VAL),2)=0,\"OK\",\"ATENÇÃO\")",'Com facial e corporal na partilha (premissa SIM).'),
  ('Responsável de todos os lançamentos = Dra. Patrícia',40,'OK','Nenhuma receita de outro profissional misturada.'),
+ ('Total por paciente = total do relatório (aba Pacientes)','=PAC_CHK','=IF(PAC_CHK=0,"OK","ATENÇÃO")','8 pacientes; consultas e procedimentos somados por fórmula.'),
  ('Consultas emitidas em ago/set que já estão na base de ago/set','=SUMIFS(OR_VAL,OR_ALE,"DUPLICIDADE*")','ATENÇÃO','5 consultas de R$ 400 (mesmo paciente, data de emissão e valor). Provável remarcação no sistema para 05/10. Mantidas em outubro (vencimento 05/10). Sra. Viviane: confirmar no sistema se é o mesmo lançamento (remarcado) ou duplicado. Se duplicado, excluir um.'),
  ('Consulta no cartão ELO com valor diferente da base e líquido maior que o bruto','=SUMIFS(OR_VAL,OR_MET,"*ELO*")','ATENÇÃO','Na base de set: R$ 400 via PIX em 04/09. Aqui: R$ 500 no cartão ELO, líquido R$ 586,56. Conferir valor e forma de pagamento.'),
  ('Receitas recebidas na conta de Rio Branco (atendimento em CZS)','=SUMIFS(OR_VAL,OR_CTA,"*Rio Branco*")','ATENÇÃO','PIX feitos para o CNPJ de Rio Branco. Entram na DRE de Cruzeiro do Sul (local do atendimento). Conferir com a contabilidade qual CNPJ emite a nota.'),
  ('Observação "duas vezes de 2.500,00 não cobrar" (corporal R$ 5.000)',5000,'ATENÇÃO','Conferir se o valor não foi lançado ou cobrado duas vezes.'),
  ('Taxa real de cartão parcelado neste relatório (bruto − líquido)',f'=SUMIFS(OR_VAL,OR_MET,"*parcelado*")-SUMIFS(OR_LIQ,OR_MET,"*parcelado*")','OK',f'{fbr(33600-liq_parc)} = '+f'{((33600-liq_parc)/33600)*100:.2f}'.replace('.',',')+'% do parcelado, antes de antecipação. A DRE usa a média de 2,2% da política.'),
- ('Passagens: total da fatura conferido com a anotação (R$ 6.836,55)','=V_PASS','ATENÇÃO','9 lançamentos SMILES de 05 e 06/09 somam R$ 6.836,55. O bilhete de R$ 2.160 é PARC 01/02: a 2ª parcela (R$ 2.160) vem em nov/26 e entra no custo desta viagem (premissa SIM). Confirmar que nenhum bilhete é da visita de 22–28/09.'),
+ ('Passagens: rateio fecha com a fatura (R$ 6.836,55)','=V_PASS','=IF(V_CHK=0,"OK","ATENÇÃO")','9 lançamentos SMILES de 05 e 06/09 = R$ 6.836,55 (confere com a anotação). Rateio por dias: Cruzeiro do Sul R$ 5.127,41 + Rio Branco R$ 1.709,14 = R$ 6.836,55. Confirmar que nenhum bilhete é da visita de 22–28/09.'),
+ ('2ª parcela do bilhete (PARC 02/02 · R$ 2.160)',2160,'PENDENTE','Vem na fatura de novembro. Entra no fechamento de novembro, com o mesmo rateio 75/25 desta viagem.'),
  ('Fatura de 05/10 conferida ao centavo',f"={q('Fatura cartão 05-10')}!E{rf}",f"=IF({q('Fatura cartão 05-10')}!E{rf+1}=0,\"OK\",\"ATENÇÃO\")",'R$ 19.707,87 = R$ 19.254,03 em reais + R$ 453,84 em dólar convertido.'),
  ('Hotel, alimentação e transporte em Cruzeiro do Sul',f"=SUM(V_LOC_CZS)",'PENDENTE','Não vieram no relatório. Se houve, lançar na aba Viagem.'),
  ('Insumos de outubro','=0','ATENÇÃO','Nenhuma compra em outubro. O material usado é o estoque de jul–ago, pago 100% pela clínica. A DRE desconta o índice de 3,49% como consumo estimado. Decidir se fica assim até a ficha técnica ter os preços das notas.'),
@@ -265,14 +279,38 @@ r=5
 for i,(lab,v,st,det) in enumerate(A,start=1):
     put(ws,r,1,i,border=B_ALL); put(ws,r,2,lab,border=B_ALL,align=WRAP); put(ws,r,3,v,fmt=NUM,border=B_ALL); put(ws,r,4,st,border=B_ALL,font=FT_B)
     put(ws,r,5,det,border=B_ALL,align=WRAP,font=FT_NOTE); ws.row_dimensions[r].height=44; r+=1
+# Pacientes
+ws=wb['Pacientes']; title(ws,'Pacientes atendidos em Cruzeiro do Sul — 05 a 07/10/2026','Consultas (R$ 400 e R$ 500) separadas dos procedimentos. Valores somados da aba Receitas CZS, por fórmula.')
+for col,w in zip('ABCDEFGHIJ',[34,13,13,13,13,14,10,36,14,60]): ws.column_dimensions[col].width=w
+hdr(ws,4,1,['Tipo / serviço','Lançamentos','Valor (R$)','% do total']); r=5; s0=r
+for lab,crit in [('Consultas (R$ 400 e R$ 500)',('OR_TIPO','"Consulta"')),('Procedimentos',('OR_TIPO','"Procedimento"')),('   Tricologia',('OR_SRV','"TRICOLOGIA"')),('   Facial Dra. Patrícia',('OR_SRV','"FACIAL DRA PATRICIA"')),('   Corporal Dra. Patrícia',('OR_SRV','"CORPORAL DRA PATRICIA"'))]:
+    put(ws,r,1,lab,border=B_ALL,font=FT_B if not lab.startswith(' ') else FT_N); put(ws,r,2,f'=COUNTIFS({crit[0]},{crit[1]})',fmt=NUM0,border=B_ALL)
+    put(ws,r,3,f'=SUMIFS(OR_VAL,{crit[0]},{crit[1]})',fmt=NUM,border=B_ALL); put(ws,r,4,f'=C{r}/SUM(OR_VAL)',fmt=PCT,border=B_ALL); r+=1
+put(ws,r,1,'Total',font=FT_B,fill=F_TOT,border=B_ALL); put(ws,r,2,f'=B{s0}+B{s0+1}',fmt=NUM0,font=FT_B,fill=F_TOT,border=B_ALL); put(ws,r,3,f'=C{s0}+C{s0+1}',fmt=NUM,font=FT_B,fill=F_TOT,border=B_ALL); put(ws,r,4,f'=C{r}/SUM(OR_VAL)',fmt=PCT,font=FT_B,fill=F_TOT,border=B_ALL); r+=2
+hdr(ws,r,1,['Paciente','Consulta (R$)','Tricologia (R$)','Facial (R$)','Corporal (R$)','Total (R$)','Lançamentos','Forma de pagamento','Recebido em','Alerta']); r+=1; p0=r
+for pac,g in o.groupby('Paciente',sort=True):
+    q_='"'+pac.replace('"','""')+'"'
+    put(ws,r,1,pac,border=B_ALL,font=FT_B)
+    put(ws,r,2,f'=SUMIFS(OR_VAL,OR_PAC,{q_},OR_TIPO,"Consulta")',fmt=NUM,border=B_ALL)
+    for c_,srv in [(3,'TRICOLOGIA'),(4,'FACIAL DRA PATRICIA'),(5,'CORPORAL DRA PATRICIA')]: put(ws,r,c_,f'=SUMIFS(OR_VAL,OR_PAC,{q_},OR_SRV,"{srv}")',fmt=NUM,border=B_ALL)
+    put(ws,r,6,f'=SUM(B{r}:E{r})',fmt=NUM,border=B_ALL,font=FT_B); put(ws,r,7,f'=COUNTIF(OR_PAC,{q_})',fmt=NUM0,border=B_ALL)
+    mets=' + '.join(sorted(set(g['Método'].map(lambda m:'cartão parcelado' if 'parcelado' in m.lower() else ('cartão à vista' if 'VISTA' in m else m.lower()))))); put(ws,r,8,mets,border=B_ALL)
+    put(ws,r,9,', '.join(sorted(set(('conta RB' if 'Rio Branco' in c else 'conta CZS' if 'Centro de Custo' in c or 'CRUZEIRO' in c else c) for c in g.Conta))),border=B_ALL)
+    al=g[g.ALERTA!=''].ALERTA; put(ws,r,10,(str(len(al))+' alerta(s) — ver aba Receitas CZS') if len(al) else None,border=B_ALL,font=FT_RED if len(al) else FT_N); r+=1
+put(ws,r,1,'Total',font=FT_B,fill=F_TOT,border=B_ALL)
+for c_ in range(2,8): put(ws,r,c_,f'=SUM({L(c_)}{p0}:{L(c_)}{r-1})',fmt=NUM if c_<7 else NUM0,font=FT_B,fill=F_TOT,border=B_ALL)
+put(ws,r+1,1,'Conferência: total por paciente = total do relatório (deve ser zero)',font=FT_NOTE); put(ws,r+1,6,f'=ROUND(F{r}-SUM(OR_VAL),2)',fmt=NUM,font=FT_B)
+name('PAC_CHK',f"{q('Pacientes')}!$F${r+1}")
+ws.freeze_panes='B5'
 # Leia-me
 ws=wb['Leia-me']; title(ws,'Fechamento da parceria de Tricologia — outubro/2026 — Clínica Núcleo S','Controladoria (Rogério Marinho) · 08/10/2026')
 ws.column_dimensions['A'].width=4; ws.column_dimensions['B'].width=120; r=4
 for t in ['Outubro é o primeiro mês com partilha 50/50. Esta planilha fecha Cruzeiro do Sul (atendimentos de 05 a 07/10) e já deixa a DRE de Rio Branco (08/10) pronta para receber o relatório.',
  'Resumo outubro: Cruzeiro do Sul + Rio Branco + total do mês, com a parte da Dra. Patrícia.',
  'DRE Cruzeiro do Sul: receitas do relatório, impostos, cartão, insumos, passagens (rateadas), estrutura, amortização e IRPJ/CSLL, tudo por fórmula.',
+ 'Pacientes: consultas (R$ 400 e R$ 500) separadas dos procedimentos e o total de cada paciente.',
  'Receitas CZS: os 40 lançamentos, com conta do plano, linha da DRE, alerta da auditoria e colunas para a Sra. Viviane conferir.',
- 'Viagem: passagens da fatura do cartão (R$ 6.836,55 + 2ª parcela de R$ 2.160), rateio por dias e espaço para hotel e alimentação.',
+ 'Viagem: passagens da fatura do cartão (R$ 6.836,55) rateadas por dias, conferência do rateio, a 2ª parcela que fica para novembro e espaço para hotel e alimentação.',
  'Fatura cartão 05-10: a fatura inteira classificada item a item (passagens, anúncios, sistemas, IOF, compras parceladas).',
  'Premissas: os mesmos índices da Calculadora. Amarelo = editável; todas as abas recalculam.',
  'Auditoria: o que foi conferido antes da entrega e o que ainda depende de confirmação.']:
@@ -285,9 +323,11 @@ items={}
 for k in ('R1','R2','R3'):
     s=o[o.LIN==k]; g=s.groupby(['Serviços','Método']).Valor.agg(['sum','count']).reset_index().sort_values('sum',ascending=False)
     items[k]=[[f"{x['Serviços'].title()} · {x['Método']}",round(float(x['sum']),2),int(x['count'])] for _,x in g.iterrows()]
+lines=[dict(p=x.Paciente,t=x.TIPO,lin=x.LIN,srv=x['Serviços'],desc=re.sub(r'^Procedimento:\s*','',str(x['Descrição'])),met=x['Método'],cta=('Rio Branco' if 'Rio Branco' in x.Conta else ('dinheiro CZS' if 'DINHEIRO' in x.Conta else 'Cruzeiro do Sul')),
+            em=f"{x['Data de emissão']:%d/%m/%Y}",ve=f"{x['Data de vencimento']:%d/%m/%Y}",bx=f"{x['Baixa']:%d/%m/%Y}",v=round(float(x.Valor),2),liq=round(float(x['Valor líquido']),2),a=x.ALERTA) for _,x in o.iterrows()]
 alert_n=int((o.ALERTA!='').sum())
 data=dict(d=d,R=R,items=items,LN=LN,pass_=[list(x) for x in PASS],pass2=list(PASS2),p_fatura=P_FATURA,p_tot=P_TOT,rat=RAT,
-          ix=IX,n=len(o),alert_n=alert_n,liq_parc=round(liq_parc,2),dup=round(float(o[o.ALERTA.str.startswith('DUPLICIDADE')].Valor.sum()),2),
+          ix=IX,n=len(o),lines=lines,p_base=P_BASE,parc2=PARC2,alert_n=alert_n,liq_parc=round(liq_parc,2),dup=round(float(o[o.ALERTA.str.startswith('DUPLICIDADE')].Valor.sum()),2),
           rb_conta=round(float(o[o.Conta.str.contains('Rio Branco')].Valor.sum()),2),
           fat=[[x[0],x[1],x[4],x[5],x[7]] for x in FAT],
           audit=[[lab,st,det] for (lab,v,st,det) in A])
