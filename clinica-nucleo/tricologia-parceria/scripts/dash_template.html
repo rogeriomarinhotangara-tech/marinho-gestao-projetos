@@ -219,6 +219,15 @@ details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent
 .muted{color:var(--muted)}
 
 [hidden]{display:none!important}
+.expw{position:relative}
+.expm{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:320px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:2px}
+.expm button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:8px;width:100%}
+.expm button:hover,.expm button:focus-visible{background:var(--accent-soft)}
+.expm button:focus-visible{outline:2px solid var(--accent)}
+.expm b{font-family:var(--f-display);font-size:13.5px}
+.expm span{font-size:12px;color:var(--muted)}
+.toast{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;max-width:min(420px,calc(100vw - 32px));background:var(--ink);color:var(--bg);border-radius:10px;padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast.bad{background:var(--bad);color:#fff}.toast.good{background:var(--good);color:#fff}
 button.kpi{width:100%;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
 button.kpi:hover{border-color:var(--accent);box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 16%,transparent)}
 .kpi .k-go{font-size:11.5px;color:var(--accent);font-weight:600;margin-top:auto;padding-top:4px}
@@ -309,6 +318,12 @@ tr[data-drill] td:first-child::after{content:" ›";color:var(--accent);font-wei
       <div class="ctrls">
         <label class="lbl" for="mes">Mês</label>
         <select id="mes" class="sel"></select>
+        <div class="expw"><button id="exp" class="btn pri" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="expm">Exportar tricologia ▾</button>
+          <div id="expm" class="expm" role="menu" hidden>
+            <button type="button" role="menuitem" data-exp="pdf"><b>Relatório em PDF</b><span>Todos os painéis da tricologia, A4, pronto para enviar ou imprimir</span></button>
+            <button type="button" role="menuitem" data-exp="xlsx"><b>Planilha em Excel</b><span>Uma aba por painel, com a calculadora em fórmulas</span></button>
+            <p class="note" style="padding:6px 12px 8px;margin:0">Fotografia de 08/10/2026. O navegador pede confirmação antes de salvar.</p>
+          </div></div>
         <button id="theme" class="btn" type="button" aria-label="Alternar tema">Tema: sistema</button>
       </div>
     </header>
@@ -317,6 +332,7 @@ tr[data-drill] td:first-child::after{content:" ›";color:var(--accent);font-wei
 </div>
 <div id="tip" class="tip" hidden></div>
 <div id="drw-bg" class="drw-bg" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <aside id="drw" class="drw" hidden role="dialog" aria-modal="true" aria-labelledby="drw-t"></aside>
 
 <script>
@@ -883,6 +899,32 @@ function renderDrill(){
   DRW.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>{closeDrill();go(b.dataset.goto)}));
 }
 function bindDrill(root){root.querySelectorAll('[data-drill]').forEach(e=>{if(e._dr)return;e._dr=1;const f=ev=>{ev.stopPropagation();openDrill(e.dataset.drill,e)};e.addEventListener('click',f);if(e.tagName!=='BUTTON'){e.tabIndex=0;e.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();f(ev)}})}})}
+
+/* ---------- exportação (capacidade downloads) ---------- */
+const XLSX_B64=/*__XLSX_B64__*/"";
+const EXP={pdf:{url:'exports/Tricologia_Paineis_Out2026.pdf',name:'Tricologia_Paineis_Out2026.pdf'},xlsx:{b64:XLSX_B64,name:'Tricologia_Paineis_Out2026.xlsx'}};
+let DLP=null;function dlns(){if(!DLP)DLP=(window.claude&&typeof window.claude.use==='function')?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);return DLP}
+const toastEl=document.getElementById('toast');let toastT;
+function toast(msg,kind){toastEl.textContent=msg;toastEl.className='toast'+(kind?' '+kind:'');toastEl.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{toastEl.hidden=true},6000)}
+const expB=document.getElementById('exp'),expM=document.getElementById('expm');
+function expOpen(o){expM.hidden=!o;expB.setAttribute('aria-expanded',String(o));if(o){const f=expM.querySelector('button');if(f)f.focus()}}
+expB.addEventListener('click',e=>{e.stopPropagation();expOpen(expM.hidden)});
+document.addEventListener('click',e=>{if(!expM.hidden&&!e.target.closest('.expw'))expOpen(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!expM.hidden){expOpen(false);expB.focus()}});
+async function exportFile(kind){
+  const f=EXP[kind];expOpen(false);toast('Preparando o arquivo…');
+  const dl=await dlns();
+  if(!dl){toast('A exportação não está disponível nesta visualização. Abra o painel pelo claude.ai para salvar o arquivo.','bad');return}
+  let blob;try{if(f.b64){const bin=atob(f.b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);blob=new Blob([u])}else{const r=await fetch(f.url);if(!r.ok)throw new Error('HTTP '+r.status);blob=await r.blob()}}catch(e){toast('Não foi possível carregar o arquivo de exportação. Recarregue a página e tente de novo.','bad');return}
+  try{const res=await dl.save({filename:f.name,data:blob});toast(res&&res.status==='delivered'?'Arquivo enviado para o destino escolhido.':'Arquivo salvo: '+f.name,'good')}
+  catch(e){const c=e&&e.code;
+    if(c==='declined')toast('Exportação cancelada.');
+    else if(c==='rate_limited')toast('Já existe um pedido de download aberto. Conclua ou aguarde alguns segundos e tente de novo.');
+    else if(c==='rejected_extension'||c==='extension_not_enabled')toast('Este formato não está disponível nesta visualização.','bad');
+    else toast('A exportação não está disponível nesta visualização.','bad')}
+}
+expM.querySelectorAll('[data-exp]').forEach(b=>b.addEventListener('click',()=>exportFile(b.dataset.exp)));
+dlns().then(dl=>{if(!dl){expB.title='Exportação disponível ao abrir o painel pelo claude.ai'}});
 
 /* ---------- controles globais ---------- */
 const mesSel=document.getElementById('mes');mesSel.innerHTML=MLONG.map((m,i)=>`<option value="${i}">${m}/2026</option>`).join('');

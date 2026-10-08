@@ -74,5 +74,6 @@ python3 -I scripts/build_conf.py <scratch> scripts conf.xlsx       # conferênci
 python3 -I scripts/build_calc.py scripts calc.xlsx                  # calculadora e base de cálculo
 python3 -I scripts/build_dash.py <scratch> <scratch>/out/dash2.json  # dados agregados do painel
 python3 -I scripts/build_out.py <scratch> out26.xlsx out26.json   # fechamento de outubro
+python3 -I scripts/build_export.py <scratch>                        # exportação dos painéis (PDF + Excel)
 python3 -I scripts/build_html.py <scratch>                          # painel (dash_template.html + dados)
 ```
