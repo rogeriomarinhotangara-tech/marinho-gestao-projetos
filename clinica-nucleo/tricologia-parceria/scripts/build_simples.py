@@ -198,7 +198,7 @@ x = ws.cell(r, 1, 'Resumo — insumos por paciente (tratamento fechado)'); x.fon
 head(ws, r, ['Tratamento', 'Sessões', 'Custo por paciente (R$)', None, 'Pacientes', 'Total (R$)', None, 'De onde vem'], 36)
 for a_, b_ in ((3, 4), (6, 7)): ws.merge_cells(start_row=r, start_column=a_, end_row=r, end_column=b_)
 r += 1; rs0 = r
-RES_I = [('Tricologia', '=TRI_SESS', '=INS_TRI', 'C', 'Eletroporação + fototerapia + kit (quadro 1)'), ('Pescoço (colo)', '=CFP_S', '=INS_CFP', 'E', 'Protocolo de eletroporação (quadro 2)'),
+RES_I = [('Tricologia', '=TRI_SESS', '=INS_TRI', 'C', 'Tratamento completo: eletroporação + fototerapia + kit + sala (quadro 1)'), ('Pescoço (colo)', '=CFP_S', '=INS_CFP', 'E', 'Protocolo de eletroporação (quadro 2)'),
          ('Facial', '=CFP_S', '=INS_CFP', 'D', 'Protocolo de eletroporação (quadro 2)'), ('Corporal', '=CFP_S', '=INS_CFP', 'F', 'Protocolo de eletroporação (quadro 2)')]
 for lab, ss, cp, col, ob in RES_I:
     cell(ws, r, 1, lab, bold=True); cell(ws, r, 2, ss, '0', h='center'); cell(ws, r, 3, cp, BRL); cell(ws, r, 4, None); ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=4)
@@ -231,18 +231,13 @@ r, t0 = ins_table(ws, r, ELE, 'TRI_ELE_S'); r = ins_sub(ws, r, 'Total da eletrop
 ws.row_breaks.append(Break(id=r - 1))
 x = ws.cell(r, 1, 'Fototerapia'); x.font = F(13, True, PET); r += 1
 r, t0 = ins_table(ws, r, FOT, 'TRI_FOT_S'); r = ins_sub(ws, r, 'Total da fototerapia', t0, 'INS_TRI_FOT'); r += 1
-x = ws.cell(r, 1, 'Kit do paciente'); x.font = F(13, True, PET); r += 1
-r, t0 = ins_table(ws, r, [('Kit SP', 1, 'kit', 135.50, 'T', 'Valor da folha de tricologia')], 'TRI_SESS'); r = ins_sub(ws, r, 'Total do kit', t0, 'INS_TRI_KIT'); r += 1
-cell(ws, r, 1, 'INSUMOS DA TRICOLOGIA POR PACIENTE', bold=True, fill=F_CLI, size=14)
+x = ws.cell(r, 1, 'Kit do paciente e sala de procedimento'); x.font = F(13, True, PET); r += 1
+r, t0 = ins_table(ws, r, [('Kit SP', 1, 'kit', 135.50, 'T', 'Valor da folha de tricologia'), ('Sala de procedimento (30 min por sessão)', 1, 'sessão', 20.00, 'S', 'R$ 20,00 por sessão, conforme a folha'), ('Ajuste ao total da folha', 1, 'un', 1.00, 'T', 'Luvas da eletroporação: a folha soma R$ 3,10')], 'TRI_SESS'); r = ins_sub(ws, r, 'Total do kit e da sala', t0, 'INS_TRI_KIT'); r += 1
+cell(ws, r, 1, 'INSUMOS DA TRICOLOGIA POR PACIENTE (tratamento completo)', bold=True, fill=F_CLI, size=14)
 for c in range(2, 7): cell(ws, r, c, None, fill=F_CLI)
 ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
-cell(ws, r, 7, '=INS_TRI_ELE+INS_TRI_FOT+INS_TRI_KIT', BRL, True, F_CLI, 14); cell(ws, r, 8, 'Eletroporação + fototerapia + kit', size=11, color='4A5F63', fill=F_CLI)
+cell(ws, r, 7, '=INS_TRI_ELE+INS_TRI_FOT+INS_TRI_KIT', BRL, True, F_CLI, 14); cell(ws, r, 8, 'Eletroporação + fototerapia + kit + sala', size=11, color='4A5F63', fill=F_CLI)
 name('INS_TRI', f"Insumos!$G${r}"); ws.row_dimensions[r].height = 30; r += 1
-GR = '7A8B8E'
-cell(ws, r, 1, 'Sala das sessões (na folha: R$ 20,00 por sessão)', size=12, color=GR, italic=True)
-cell(ws, r, 2, None); cell(ws, r, 3, None); cell(ws, r, 4, '=ROUND(SALA_NEG*MIN_TRI/60,2)', BRL, size=12, color=GR); cell(ws, r, 5, None); cell(ws, r, 6, '=TRI_SESS', '0', size=12, color=GR, h='center')
-cell(ws, r, 7, '=ROUND(D{0}*F{0},2)'.format(r), BRL, size=12, color=GR, italic=True)
-cell(ws, r, 8, f'="Não entra nos insumos: a sala já é cobrada na despesa Ocupação da sala. Insumos + sala = R$ "&FIXED(INS_TRI+G{r},2)&" (folha: R$ 1.232)"', size=11, color='B3382F', wrap=True); ws.row_dimensions[r].height = 46; r += 2
 # --- quadro 2: facial, pescoço e corporal
 ws.row_breaks.append(Break(id=r - 1))
 x = ws.cell(r, 1, 'Quadro 2 — Facial, pescoço (colo) e corporal (tratamento fechado)'); x.font = F(15, True, PET); ws.row_dimensions[r].height = 26; r += 1
@@ -412,7 +407,7 @@ a = det('Vendas no crédito antecipadas', '=FAT_CRED', BRL, 0.0874, PCT, VAL, 'T
 subtotal('antecipação', [a], 'S_ANT')
 conta('4. Insumos (material de cada tratamento fechado)')
 rows = []
-for lab, col, cp, ob in (('Tricologia', 'C', 'INS_TRI', 'Aba Insumos, quadro 1: eletroporação + fototerapia + kit'), ('Pescoço (colo)', 'E', 'INS_CFP', 'Aba Insumos, quadro 2'),
+for lab, col, cp, ob in (('Tricologia', 'C', 'INS_TRI', 'Aba Insumos, quadro 1: tratamento completo (eletroporação + fototerapia + kit + sala)'), ('Pescoço (colo)', 'E', 'INS_CFP', 'Aba Insumos, quadro 2'),
                          ('Facial', 'D', 'INS_CFP', 'Aba Insumos, quadro 2'), ('Corporal', 'F', 'INS_CFP', 'Aba Insumos, quadro 2')):
     rows.append(det(f'{lab}: pacientes × insumos por paciente', f'=COUNTIF(Receitas!{col}{REC_F0}:{col}{REC_F1},">0")', '0" pac."', f'={cp}', BRL, VAL, ob))
 subtotal('insumos', rows, 'C_INS')
@@ -494,7 +489,7 @@ TXT = [('1', 'Receitas: relatório de transações do sistema de 05 a 07/10/2026
        ('2', 'Regra da divisão: da receita bruta saem só as 9 despesas desta planilha. O que sobra é dividido 50% para a Dra. Patrícia e 50% para a Clínica Núcleo S, a partir das receitas de outubro/2026. Não entram a taxa de estrutura nem a amortização do investimento.'),
        ('3', 'PIS (0,65%) e COFINS (3%): alíquotas do Lucro Presumido, sobre a receita bruta.'),
        ('4', 'Taxa do cartão (1,92%): diferença entre o valor bruto e o valor líquido das vendas parceladas no relatório (R$ 646,14 sobre R$ 33.600,00), aplicada sobre todas as vendas no cartão de crédito (R$ 34.100,00). Antecipação (8,74%): taxa informada pela diretoria; todas as vendas no crédito foram antecipadas.'),
-       ('5', 'Insumos: folhas de procedimento de cada tratamento fechado (quantidade × preço × sessões). Tricologia: 3 sessões de eletroporação + 8 de fototerapia + kit. Facial, pescoço e corporal: 8 sessões do protocolo de eletroporação. A sala das sessões, que aparece na folha da tricologia, não entra nos insumos porque já é cobrada na despesa 8.'),
+       ('5', 'Insumos: folhas de procedimento de cada tratamento fechado (quantidade × preço × sessões). Tricologia: R$ 1.232,08 por paciente, tratamento completo da folha (3 sessões de eletroporação + 8 de fototerapia + kit + sala de procedimento). Facial, pescoço e corporal: 8 sessões do protocolo de eletroporação.'),
        ('6', 'Viagem: passagens (9 lançamentos Smiles da fatura do cartão de 05/10/2026, R$ 6.836,55; a 2ª parcela de R$ 2.160,00 vem em novembro), alimentação de R$ 90,00 e táxi de R$ 50,00.'),
        ('7', 'Ocupação da sala — custo real: despesas de Cruzeiro do Sul em setembro/2026 (relatório de transações, 24 lançamentos; só o aluguel da clínica, R$ 5.000,00; sem pró-labore), total de R$ '+FMTBR(CF_TOT)+', ÷ horas de sala ocupadas no mês (3 salas produtivas × 22 dias × 10 horas × 65%) = custo real de 1 sala por hora.'),
        ('8', 'Ocupação da sala — custo negociado: para esta bateria de procedimentos em Cruzeiro do Sul, a diretoria combinou R$ 40,00 por hora de sala. Horas: 1 hora por consulta + visitas do tratamento fechado (tricologia 11, pescoço 8 e facial 8 visitas de 30 minutos; corporal 16 visitas de 1 hora). A diferença para o custo real é um desconto concedido pela clínica.'),
