@@ -33,6 +33,8 @@ S.loc[cat == 'DR MARCOS SANTANA', 'fora'] = 'Retirada do sócio'
 S.loc[(cat == 'CURSOS,TREINAMENTOS E CONSULTORIAS') & ~S.mk, 'fora'] = 'Consultoria / curso'
 S.loc[cat == 'GRATIFICAÇÃO', 'fora'] = 'Comissão (varia com as vendas)'
 S.loc[(cat == 'MATERIAL PERMANENTE') & ~S.mk, 'fora'] = 'Compra de equipamento'
+S.loc[up(S['Descrição']).str.contains('ALUGUEL DEPOSITO'), 'fora'] = 'Aluguel do depósito (diretoria: só o aluguel da clínica)'
+S.loc[cat == 'PRO LABORE', 'fora'] = 'Pró-labore do sócio (diretoria)'
 FORA = S[S.fora != '']; S = S[S.fora == ''].copy()
 GRUPO = {'ALUGUEL E CONDOMINIO': 'Aluguel', 'CONTAS ENERGIA': 'Energia elétrica', 'TELEFONE/ INTERNET': 'Internet', 'SEGURANÇA': 'Vigilância e segurança',
          'SALARIO': 'Equipe — salários', 'INSS': 'Equipe — INSS e FGTS', 'FGTS': 'Equipe — INSS e FGTS',
@@ -65,9 +67,9 @@ for _, x in S.iterrows():
     CZ.append(dict(d=pd.Timestamp(x['Data de vencimento']).strftime('%d/%m/%Y'), lab=lab, g=GRUPO[c], v=v, obs='. '.join(obs_)))
 CZ.sort(key=lambda z: (GORD.index(z['g']), z['d'][3:5] + z['d'][:2], z['lab']))
 CF_TOT = round(sum(z['v'] for z in CZ), 2)
-assert len(CZ) == 26 and abs(CF_TOT - 27444.48) < 0.005, (len(CZ), CF_TOT)
+assert len(CZ) == 24 and abs(CF_TOT - 25001.48) < 0.005 and len(FORA) == 9, (len(CZ), CF_TOT, len(FORA))
 GRP_USED = [g for g in GORD if any(z['g'] == g for z in CZ)]
-CF_NOTE = {'Aluguel': 'Imóvel da clínica R$ 5.000,00 + depósito R$ 1.000,00', 'Equipe — salários': 'Salários e complemento da equipe de Cruzeiro do Sul',
+CF_NOTE = {'Aluguel': 'Só o imóvel da clínica: R$ 5.000,00 (diretoria)', 'Equipe — salários': 'Salários e complemento da equipe de Cruzeiro do Sul',
            'Pró-labore da administração': 'Lançamento marcado CZS', 'Taxas, alvarás e licenças': 'Inspeção sanitária, área construída e meio ambiente',
            'Refeições e alimentação da equipe': 'Refeições e compras de mercado da equipe'}
 
@@ -171,7 +173,7 @@ def step(ws, r, text):
 HRS = '0.0" h"'
 r = 4
 step(ws, r, 'Passo 1 — Quanto custa manter a clínica de Cruzeiro do Sul funcionando por mês'); r += 1
-note(ws, r, 'Valores de setembro/2026, do relatório de transações: lançamentos de Cruzeiro do Sul (marcados "CZS" ou pagos pelas contas de CZS), um a um na aba "Despesas de CZS". Aluguel considerado: R$ 5.000,00.', 6, 11); ws.row_dimensions[r].height = 30; r += 1
+note(ws, r, 'Valores de setembro/2026, do relatório de transações: lançamentos de Cruzeiro do Sul (marcados "CZS" ou pagos pelas contas de CZS), um a um na aba "Despesas de CZS". Aluguel: só o imóvel da clínica, R$ 5.000,00.', 6, 11); ws.row_dimensions[r].height = 30; r += 1
 hd3(ws, r, 'Despesa da unidade', 'R$ no mês', 'Observação'); r += 1; c0 = r
 for g in GRP_USED:
     cell(ws, r, 1, g); cell(ws, r, 2, f'=SUMIFS(CZS_VAL,CZS_GRP,A{r},CZS_ENT,"SIM")', BRL); obs(ws, r, CF_NOTE.get(g)); ws.row_dimensions[r].height = 20; r += 1
@@ -180,7 +182,7 @@ name('SALA_CF', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 2
 r += 1
 ws.row_breaks.append(Break(id=r - 1)); step(ws, r, 'Passo 2 — Quantas horas de sala a clínica tem por mês'); r += 1
 hd3(ws, r, 'Item', 'Quantidade', 'Observação'); r += 1
-cell(ws, r, 1, 'Salas de atendimento em Cruzeiro do Sul'); edit(ws, r, 2, 4, '0'); obs(ws, r, 'A CONFIRMAR: contar consultórios + salas de procedimento + soroterapia', color='B3382F', bold=True); ws.row_dimensions[r].height = 34; name('SALA_N', f"{q('Custo da sala')}!$B${r}"); r += 1
+cell(ws, r, 1, 'Salas produtivas em Cruzeiro do Sul'); edit(ws, r, 2, 3, '0'); obs(ws, r, '2 consultórios (também fazem procedimentos) + sala da esteira'); ws.row_dimensions[r].height = 34; name('SALA_N', f"{q('Custo da sala')}!$B${r}"); r += 1
 cell(ws, r, 1, 'Dias de funcionamento por mês'); edit(ws, r, 2, 22, '0'); obs(ws, r, 'Dias úteis (planilha de precificação)'); name('SALA_DIAS', f"{q('Custo da sala')}!$B${r}"); r += 1
 cell(ws, r, 1, 'Horas de funcionamento por dia'); edit(ws, r, 2, 10, HRS); obs(ws, r, 'Planilha de precificação'); name('SALA_H', f"{q('Custo da sala')}!$B${r}"); r += 1
 cell(ws, r, 1, 'Taxa de ocupação considerada'); edit(ws, r, 2, 0.65, '0%')
@@ -207,10 +209,10 @@ cell(ws, r, 4, f'=SUM(D{u0}:D{r-1})', HRS, True, F_TOT, h='center'); cell(ws, r,
 name('USO_HS', f"{q('Custo da sala')}!$F${r}"); ws.row_dimensions[r].height = 28; r += 1
 note(ws, r, 'Horas de sala = horas no dia × salas usadas. Exemplo: 10,5 horas com 2 salas = 21 horas de sala. Se ela não atendeu na quarta-feira, deixe a linha em branco.', 6, 11); r += 2
 step(ws, r, 'Passo 5 — Avaliações dos pacientes na clínica'); r += 1
-x = ws.cell(r, 1, 'Depois do atendimento, cada paciente volta à clínica para as avaliações e usa uma sala.'); x.font = F(12, False, '4A5F63', True); r += 1
+x = ws.cell(r, 1, 'Cada paciente que fez procedimento volta à clínica para as avaliações e usa uma sala.'); x.font = F(12, False, '4A5F63', True); r += 1
 hd3(ws, r, 'Item', 'Quantidade', 'Observação'); r += 1
-cell(ws, r, 1, 'Pacientes que voltam para avaliação'); edit(ws, r, 2, len(PAC_ORD), '0')
-obs(ws, r, f'="Pacientes atendidos (aba Receitas): "&COUNTIF(Receitas!G{REC_F0}:G{REC_F1},">0")'); name('AVAL_N', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
+cell(ws, r, 1, 'Pacientes que fizeram procedimentos'); cell(ws, r, 2, f'=SUMPRODUCT(--((Receitas!C{REC_F0}:C{REC_F1}+Receitas!D{REC_F0}:D{REC_F1}+Receitas!E{REC_F0}:E{REC_F1}+Receitas!F{REC_F0}:F{REC_F1})>0))', '0', True)
+obs(ws, r, 'Contados sozinhos na aba Receitas. Quem fez só consulta não entra'); name('AVAL_N', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
 cell(ws, r, 1, 'Horas de avaliação por paciente'); edit(ws, r, 2, 11, HRS); obs(ws, r, 'Tempo de sala usado por paciente nas avaliações'); name('AVAL_H', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
 cell(ws, r, 1, 'Horas de sala nas avaliações', bold=True, fill=F_TOT); cell(ws, r, 2, '=AVAL_N*AVAL_H', HRS, True, F_TOT); obs(ws, r, 'Pacientes × horas por paciente (1 sala)', F_TOT)
 name('AVAL_HS', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 28; r += 2
@@ -226,7 +228,7 @@ cell(ws, r, 1, 'TAXA DE OCUPAÇÃO DA SALA', bold=True, fill=F_CLI, size=14); ce
 obs(ws, r, 'Atendimento + avaliações · vai para o Resumo', F_CLI); name('SALA_TAXA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 32; r += 2
 x = ws.cell(r, 1, 'Para comparar: custo de 1 sala por hora conforme o nº de salas e a ocupação'); x.font = F(13, True, PET); r += 1
 head(ws, r, ['Nº de salas na unidade', 'Ocupação 100%', 'Ocupação 80%', 'Ocupação 65%'], 34); r += 1
-for n_ in (3, 4, 5, 6, 7):
+for n_ in (2, 3, 4, 5, 6):
     cell(ws, r, 1, f'{n_} salas')
     for c, oc in ((2, 1.0), (3, 0.8), (4, 0.65)): cell(ws, r, c, f'=ROUND(SALA_CF/({n_}*SALA_DIAS*SALA_H*{oc}),2)', BRL)
     r += 1
@@ -249,7 +251,7 @@ name('CZS_VAL', f"{q('Despesas de CZS')}!$D${z0}:$D${z1}"); name('CZS_GRP', f"{q
 cell(ws, r, 1, None, fill=F_TOT); cell(ws, r, 2, 'TOTAL QUE ENTRA NO CUSTO DA SALA', bold=True, fill=F_TOT); cell(ws, r, 3, None, fill=F_TOT)
 cell(ws, r, 4, '=SUMIFS(CZS_VAL,CZS_ENT,"SIM")', BRL, True, F_TOT); cell(ws, r, 5, None, fill=F_TOT); cell(ws, r, 6, None, fill=F_TOT)
 name('CZS_TOT', f"{q('Despesas de CZS')}!$D${r}"); ws.row_dimensions[r].height = 28; r += 2
-note(ws, r, 'Não entram no custo da sala: retiradas do sócio, comissões, consultorias e cursos, compras de equipamentos sem a marca CZS e despesas de Epitaciolândia pagas pelo caixa de Cruzeiro do Sul.', 6, 11)
+note(ws, r, 'Não entram no custo da sala: retiradas e pró-labore do sócio, aluguel do depósito, comissões, consultorias e cursos, compras de equipamentos sem a marca CZS e despesas de Epitaciolândia pagas pelo caixa de Cruzeiro do Sul.', 6, 11)
 ws.freeze_panes = 'A5'
 
 # ================= Despesas
@@ -330,7 +332,7 @@ TXT = [('1', 'Receitas: relatório de transações do sistema de 05 a 07/10/2026
        ('5', 'Antecipação (8,74%): taxa informada pela diretoria. Todas as vendas no cartão de crédito de outubro foram antecipadas.'),
        ('6', 'Insumos (3,49%): não houve compra de material em outubro. O índice vem das compras de ago–set (R$ 6.281,73) sobre a receita da tricologia nesses meses (R$ 179.877,00). Quando houver nota fiscal, troque pela taxa real.'),
        ('7', 'Passagens: os 9 lançamentos Smiles da fatura do cartão de 05/10/2026, total de R$ 6.836,55, descontados por inteiro. A 2ª parcela de R$ 2.160,00 vem na fatura de novembro.'),
-       ('8', 'Taxa de ocupação da sala: despesas de Cruzeiro do Sul em setembro/2026 (relatório de transações, 26 lançamentos; aluguel considerado R$ 5.000,00), total de R$ '+FMTBR(CF_TOT)+', ÷ horas de sala ocupadas no mês (salas × dias × horas por dia × ocupação) = custo de 1 sala por hora. Esse valor × horas de sala usadas: atendimento da Dra. Patrícia (2 salas: segunda das 08h às 18h30 e terça das 07h às 17h30 = 42 horas) + avaliações dos pacientes na clínica (11 horas por paciente). Detalhes nas abas "Custo da sala" e "Despesas de CZS".'),
+       ('8', 'Taxa de ocupação da sala: despesas de Cruzeiro do Sul em setembro/2026 (relatório de transações, 24 lançamentos; só o aluguel da clínica, R$ 5.000,00; sem pró-labore), total de R$ '+FMTBR(CF_TOT)+', ÷ horas de sala ocupadas no mês (3 salas produtivas × dias × horas por dia × ocupação) = custo de 1 sala por hora. Esse valor × horas de sala usadas: atendimento da Dra. Patrícia (2 salas: segunda das 08h às 18h30 e terça das 07h às 17h30 = 42 horas) + avaliações na clínica (11 horas por paciente que fez procedimento). Detalhes nas abas "Custo da sala" e "Despesas de CZS".'),
        ('9', 'IRPJ e CSLL: Lucro Presumido. Consultas: 7,68% (32% × 24%). Procedimentos: 2,28% (8% × 15% + 12% × 9%).')]
 r = 4
 for k, t in TXT:
