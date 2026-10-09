@@ -25,7 +25,7 @@ function para(t, o = {}) {
 }
 
 // ---------------- capa (uma tabela escura ocupando a página)
-const C = J.capa, DARK = '0C2A2F', CARD = '10353B', CB = '1D4A51';
+const C = Object.assign({ uni: 'Cruzeiro do Sul', per: 'atendimentos de 05 a 07/10/2026' }, J.capa), DARK = '0C2A2F', CARD = '10353B', CB = '1D4A51';
 const coverW = PW - 2 * 720, half = Math.floor(coverW / 2);
 function ccell(children, o = {}) {
   return new TableCell({
@@ -42,8 +42,8 @@ const coverRows = [
   new TableRow({ height: { value: 5600, rule: HeightRule.EXACT }, children: [ccell([
     new Paragraph({ spacing: { after: 500 }, children: [new TextRun({ text: ' NS ', font: FONT, bold: true, size: 30, color: 'FFFFFF', shading: { type: ShadingType.CLEAR, fill: ACC, color: 'auto' } })] }),
     para('Parceria de Tricologia', { size: 54, bold: true, color: 'FFFFFF', after: 0 }),
-    para('Fechamento de Cruzeiro do Sul', { size: 54, bold: true, color: 'FFFFFF', after: 240 }),
-    para('Clínica Núcleo S × Dra. Patrícia Fabrini · atendimentos de 05 a 07/10/2026 · receitas, despesas, insumos, custo da sala, viagem e a base de cálculo de cada valor, aba por aba.', { size: 22, color: 'A9C4C6' }),
+    para('Fechamento de ' + C.uni, { size: 54, bold: true, color: 'FFFFFF', after: 240 }),
+    para(`Clínica Núcleo S × Dra. Patrícia Fabrini · ${C.per} · receitas, despesas, insumos, custo da sala${J.sheets.some((s) => s.name === 'Viagem') ? ', viagem' : ''} e a base de cálculo de cada valor, aba por aba.`, { size: 22, color: 'A9C4C6' }),
   ], { span: 2 })] }),
   new TableRow({ height: { value: 1350, rule: HeightRule.EXACT }, children: [kpi('Receita bruta', C.rec), kpi('Total das despesas descontadas', C.desp)] }),
   new TableRow({ height: { value: 1350, rule: HeightRule.EXACT }, children: [kpi('Resultado para dividir', C.res), kpi('Dra. Patrícia · 50%', C.pat, '9CC6FF')] }),
@@ -56,7 +56,7 @@ const cover = new Table({ width: { size: coverW, type: WidthType.DXA }, columnWi
 // ---------------- abas
 function footer(w) {
   return new Footer({ children: [new Paragraph({ tabStops: [{ type: TabStopType.RIGHT, position: w }], children: [
-    run('Clínica Núcleo S · Parceria de Tricologia · Cruzeiro do Sul · outubro/2026', { size: 15, color: MUT }),
+    run(`Clínica Núcleo S · Parceria de Tricologia · ${C.uni} · outubro/2026`, { size: 15, color: MUT }),
     new TextRun({ children: ['\tPágina ', PageNumber.CURRENT, ' de ', PageNumber.TOTAL_PAGES], font: FONT, size: 15, color: MUT }),
   ] })] });
 }
@@ -109,7 +109,7 @@ for (const s of J.sheets) {
   });
 }
 const doc = new Document({
-  creator: 'Controladoria · Clínica Núcleo S', title: 'Parceria de Tricologia — Fechamento de Cruzeiro do Sul',
+  creator: 'Controladoria · Clínica Núcleo S', title: 'Parceria de Tricologia — Fechamento de ' + C.uni,
   styles: { default: { document: { run: { font: FONT, size: 18 } } } }, sections,
 });
 Packer.toBuffer(doc).then((buf) => { fs.writeFileSync(OUT, buf); console.log('ok', OUT, sections.length - 1, 'abas'); });

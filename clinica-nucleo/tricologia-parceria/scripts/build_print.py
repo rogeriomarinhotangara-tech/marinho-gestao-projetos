@@ -1,8 +1,10 @@
 """Impressão aba por aba da planilha simples (PDF com capa no estilo do relatório dos painéis) + JSON de blocos para o Word.
-Uso: python3 -I build_print.py <scratch> <planilha_formatos.xlsx> <planilha_recalculada.xlsx> <saida_dir> <nome_base>"""
+Uso: python3 -I build_print.py <scratch> <planilha_formatos.xlsx> <planilha_recalculada.xlsx> <saida_dir> <nome_base> [unidade] [período]"""
 import sys, json, html, datetime, subprocess, os
 import openpyxl
 SP, FMT, VAL, OUTD, BASE = sys.argv[1:6]
+UNI = sys.argv[6] if len(sys.argv) > 6 else 'Cruzeiro do Sul'
+PER = sys.argv[7] if len(sys.argv) > 7 else 'atendimentos de 05 a 07/10/2026'
 os.makedirs(OUTD, exist_ok=True)
 wf = openpyxl.load_workbook(FMT); wv = openpyxl.load_workbook(VAL, data_only=True)
 DATA_REF = datetime.date.today().strftime('%d/%m/%Y')
@@ -27,6 +29,7 @@ def fmtv(v, f):
         return nfmt(v * 100, d) + '%'
     if '" h"' in f: return nfmt(v, 1) + ' h'
     if '" min"' in f: return nfmt(v, 0) + ' min'
+    if '" m²"' in f: return nfmt(v, 2) + ' m²'
     if '" pac."' in f: return nfmt(v, 0) + ' pac.'
     if f == '0': return nfmt(v, 0)
     if f.startswith('#,##0.0'): return nfmt(v, 1)
@@ -38,7 +41,7 @@ def rgb(c):
         return ('#' + x[-6:]) if isinstance(x, str) and len(x) >= 6 and x not in ('00000000',) else None
     except Exception: return None
 
-ORDER = ['Resumo', 'Receitas', 'Despesas', 'Insumos', 'Custo da sala', 'Despesas de CZS', 'Viagem', 'Como foi feito']
+ORDER = wf.sheetnames
 SHEETS = []
 for si, sn in enumerate(ORDER, 1):
     fs, vs = wf[sn], wv[sn]
@@ -106,7 +109,7 @@ for row in rs.iter_rows(min_row=6):
     a, b = row[0].value, row[1].value
     if isinstance(a, str) and b is not None: K[a.strip()] = b
 CAPA = dict(rec=K['RECEITA BRUTA TOTAL'], desp=K['TOTAL DAS DESPESAS'], res=K['RESULTADO PARA DIVIDIR'], pat=K['DRA. PATRÍCIA RECEBE'], cli=K['CLÍNICA NÚCLEO S RECEBE'],
-            sala_real=nm('SALA_HORA'), sala_neg=nm('SALA_NEG'), desc=nm('SALA_DESC'), data=DATA_REF)
+            sala_real=nm('SALA_HORA'), sala_neg=nm('SALA_NEG'), desc=nm('SALA_DESC'), data=DATA_REF, uni=UNI, per=PER)
 json.dump(dict(capa=CAPA, sheets=SHEETS), open(f'{OUTD}/{BASE}.json', 'w', encoding='utf-8'), ensure_ascii=False)
 
 # ---------------- HTML → PDF
@@ -115,7 +118,7 @@ esc = lambda s: html.escape(str(s))
 PT = {11: 7.6, 12: 8.1, 13: 8.6, 14: 9.4, 15: 10.0, 16: 11.0, 20: 13}
 CSS = open(SP + '/fonts/local.css', encoding='utf-8').read() + r'''
 @page{size:A4;margin:15mm 13mm 17mm 13mm;
-  @bottom-left{content:"Clínica Núcleo S · Parceria de Tricologia · Cruzeiro do Sul · outubro/2026";font:7.5pt "IBM Plex Sans",sans-serif;color:#6b7e82}
+  @bottom-left{content:"Clínica Núcleo S · Parceria de Tricologia · ''' + UNI + r''' · outubro/2026";font:7.5pt "IBM Plex Sans",sans-serif;color:#6b7e82}
   @bottom-right{content:"Página " counter(page) " de " counter(pages);font:7.5pt "IBM Plex Sans",sans-serif;color:#6b7e82}}
 @page:first{margin:0;@bottom-left{content:none}@bottom-right{content:none}}
 @page land{size:A4 landscape;margin:12mm 13mm 15mm 13mm}
@@ -155,11 +158,11 @@ tr{break-inside:avoid}
 .cover .toc div{break-inside:avoid;margin-bottom:1.6mm}.cover .toc b{color:#fff}
 .cover .foot{margin-top:6mm;font-size:8pt;color:#7f9ea1}
 '''
-H = ['<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Parceria de Tricologia — Cruzeiro do Sul — planilha</title><style>' + CSS + '</style></head><body>']
+H = ['<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Parceria de Tricologia — ' + UNI + ' — planilha</title><style>' + CSS + '</style></head><body>']
 C = CAPA
 H.append(f'''<section class="cover"><div class="mark">NS</div>
-<h1>Parceria de Tricologia<br>Fechamento de Cruzeiro do Sul</h1>
-<div class="sub">Clínica Núcleo S × Dra. Patrícia Fabrini · atendimentos de 05 a 07/10/2026 · receitas, despesas, insumos, custo da sala, viagem e a base de cálculo de cada valor, aba por aba.</div>
+<h1>Parceria de Tricologia<br>Fechamento de {UNI}</h1>
+<div class="sub">Clínica Núcleo S × Dra. Patrícia Fabrini · {PER} · receitas, despesas, insumos, custo da sala{', viagem' if 'Viagem' in ORDER else ''} e a base de cálculo de cada valor, aba por aba.</div>
 <div class="kp"><div><small>Receita bruta</small><b>{brl(C['rec'])}</b></div><div><small>Total das despesas descontadas</small><b>{brl(C['desp'])}</b></div>
 <div><small>Resultado para dividir</small><b>{brl(C['res'])}</b></div><div class="pat"><small>Dra. Patrícia · 50%</small><b>{brl(C['pat'])}</b></div></div>
 <div class="nt">Sala: custo real de {brl(C['sala_real'])} por hora; nesta bateria de procedimentos foi negociado {brl(C['sala_neg'])} por hora (desconto de {brl(C['desc'])} concedido pela clínica).</div>

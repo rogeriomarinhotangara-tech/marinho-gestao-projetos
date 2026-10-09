@@ -22,6 +22,9 @@ Nenhuma planilha é versionada aqui: todas trazem lançamentos com nomes de paci
   para a Dra. Patrícia (receitas, 9 despesas em razão, insumos por tratamento, custo da sala real e
   negociado, viagem). O PDF e o Word trazem capa e todas as abas. Base de cálculo e roteiro para
   Rio Branco em [`BASE_DE_CALCULO_CZS_OUT2026.md`](BASE_DE_CALCULO_CZS_OUT2026.md).
+- `Conta_Simples_Dra_Patricia_Out2026_RB.xlsx` / `.pdf` / `.docx`: o mesmo modelo para Rio Branco (08/10),
+  com o custo da sala pela metragem das salas produtivas. Base em
+  [`BASE_DE_CALCULO_RB_OUT2026.md`](BASE_DE_CALCULO_RB_OUT2026.md).
 - Painel: https://claude.ai/artifact/A1RKRD9GzECyje2NBqf4kQ (privado). Sem nomes de pacientes
   e sem detalhe por pessoa em folha, honorários, comissões, consultorias e retiradas.
 
