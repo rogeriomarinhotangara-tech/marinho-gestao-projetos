@@ -208,24 +208,45 @@ cell(ws, r, 1, 'TOTAL', bold=True, fill=F_TOT); cell(ws, r, 2, None, fill=F_TOT)
 cell(ws, r, 4, f'=SUM(D{u0}:D{r-1})', HRS, True, F_TOT, h='center'); cell(ws, r, 5, None, fill=F_TOT); cell(ws, r, 6, f'=SUM(F{u0}:F{r-1})', HRS, True, F_TOT, h='center')
 name('USO_HS', f"{q('Custo da sala')}!$F${r}"); ws.row_dimensions[r].height = 28; r += 1
 note(ws, r, 'Horas de sala = horas no dia × salas usadas. Exemplo: 10,5 horas com 2 salas = 21 horas de sala. Se ela não atendeu na quarta-feira, deixe a linha em branco.', 6, 11); r += 2
-step(ws, r, 'Passo 5 — Avaliações dos pacientes na clínica'); r += 1
-x = ws.cell(r, 1, 'Cada paciente que fez procedimento volta à clínica para as avaliações e usa uma sala.'); x.font = F(12, False, '4A5F63', True); r += 1
+ws.row_breaks.append(Break(id=r - 1)); step(ws, r, 'Passo 5 — Visitas de avaliação dos pacientes na clínica'); r += 1
+note(ws, r, 'Depois do atendimento da Dra. Patrícia, cada paciente que fez procedimento volta à clínica para visitas de avaliação, conforme o tratamento. Cada visita ocupa uma sala. Quem fez dois tratamentos (ex.: facial e pescoço) faz as visitas dos dois.', 6, 12); ws.row_dimensions[r].height = 36; r += 1
 hd3(ws, r, 'Item', 'Quantidade', 'Observação'); r += 1
-cell(ws, r, 1, 'Pacientes que fizeram procedimentos'); cell(ws, r, 2, f'=SUMPRODUCT(--((Receitas!C{REC_F0}:C{REC_F1}+Receitas!D{REC_F0}:D{REC_F1}+Receitas!E{REC_F0}:E{REC_F1}+Receitas!F{REC_F0}:F{REC_F1})>0))', '0', True)
-obs(ws, r, 'Contados sozinhos na aba Receitas. Quem fez só consulta não entra'); name('AVAL_N', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
-cell(ws, r, 1, 'Horas de avaliação por paciente'); edit(ws, r, 2, 11, HRS); obs(ws, r, 'Tempo de sala usado por paciente nas avaliações'); name('AVAL_H', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 1
-cell(ws, r, 1, 'Horas de sala nas avaliações', bold=True, fill=F_TOT); cell(ws, r, 2, '=AVAL_N*AVAL_H', HRS, True, F_TOT); obs(ws, r, 'Pacientes × horas por paciente (1 sala)', F_TOT)
-name('AVAL_HS', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 28; r += 2
+cell(ws, r, 1, 'Tempo de cada visita', bold=True); edit(ws, r, 2, 30, '0" min"'); obs(ws, r, '30 minutos por visita'); name('VIS_MIN', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 26; r += 2
+x = ws.cell(r, 1, 'Visitas por tipo de tratamento'); x.font = F(13, True, PET); ws.row_dimensions[r].height = 24; r += 1
+head(ws, r, ['Tratamento', 'Pacientes', 'Visitas por paciente', 'Total de visitas', 'Tempo de cada visita', 'Horas de sala'], 40); r += 1; v0 = r
+VIS = [('Tricologia', 'C', 11, 'VIS_TRI'), ('Pescoço', 'E', 8, 'VIS_PES'), ('Facial', 'D', 8, 'VIS_FAC'), ('Corporal', 'F', 8, 'VIS_COR')]
+for lab, col, nv, nm in VIS:
+    cell(ws, r, 1, lab, bold=True); cell(ws, r, 2, f'=COUNTIF(Receitas!{col}{REC_F0}:{col}{REC_F1},">0")', '0', h='center')
+    edit(ws, r, 3, nv, '0'); ws.cell(r, 3).alignment = Alignment(horizontal='center', vertical='center'); name(nm, f"{q('Custo da sala')}!$C${r}")
+    cell(ws, r, 4, f'=B{r}*C{r}', '0', h='center'); cell(ws, r, 5, '=VIS_MIN', '0" min"', h='center'); cell(ws, r, 6, f'=ROUND(D{r}*VIS_MIN/60,2)', HRS, True, h='center')
+    ws.row_dimensions[r].height = 26; r += 1
+cell(ws, r, 1, 'TOTAL', bold=True, fill=F_TOT); cell(ws, r, 2, None, fill=F_TOT); cell(ws, r, 3, None, fill=F_TOT)
+cell(ws, r, 4, f'=SUM(D{v0}:D{r-1})', '0', True, F_TOT, h='center'); cell(ws, r, 5, None, fill=F_TOT); cell(ws, r, 6, f'=SUM(F{v0}:F{r-1})', HRS, True, F_TOT, h='center')
+name('AVAL_HS', f"{q('Custo da sala')}!$F${r}"); name('VIS_TOT', f"{q('Custo da sala')}!$D${r}"); ws.row_dimensions[r].height = 28; r += 1
+note(ws, r, 'Pacientes: contados sozinhos na aba Receitas (quem tem valor no tratamento). Horas de sala = total de visitas × 30 minutos.', 6, 11); r += 2
+ws.row_breaks.append(Break(id=r - 1)); x = ws.cell(r, 1, 'Visitas de cada paciente'); x.font = F(13, True, PET); ws.row_dimensions[r].height = 24; r += 1
+head(ws, r, ['Paciente', 'Tratamento', None, 'Visitas', 'Tempo de cada visita', 'Horas de sala'], 40); ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=3); r += 1; w0 = r
+for i in range(REC_F0, REC_F1 + 1):
+    R = lambda c: f'Receitas!{c}{i}'
+    cell(ws, r, 1, f'={R("A")}', bold=True)
+    trat = (f'=IF({R("C")}+{R("D")}+{R("E")}+{R("F")}=0,"Só consulta (não volta)",MID(IF({R("C")}>0,", Tricologia","")&IF({R("E")}>0,", Pescoço","")'
+            f'&IF({R("D")}>0,", Facial","")&IF({R("F")}>0,", Corporal",""),3,80))')
+    cell(ws, r, 2, trat, size=12); cell(ws, r, 3, None); ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=3)
+    cell(ws, r, 4, f'=IF({R("C")}>0,VIS_TRI,0)+IF({R("E")}>0,VIS_PES,0)+IF({R("D")}>0,VIS_FAC,0)+IF({R("F")}>0,VIS_COR,0)', '0', h='center')
+    cell(ws, r, 5, '=VIS_MIN', '0" min"', h='center'); cell(ws, r, 6, f'=ROUND(D{r}*VIS_MIN/60,2)', HRS, True, h='center'); ws.row_dimensions[r].height = 24; r += 1
+cell(ws, r, 1, 'TOTAL', bold=True, fill=F_TOT); cell(ws, r, 2, None, fill=F_TOT); cell(ws, r, 3, None, fill=F_TOT); ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=3)
+cell(ws, r, 4, f'=SUM(D{w0}:D{r-1})', '0', True, F_TOT, h='center'); cell(ws, r, 5, None, fill=F_TOT); cell(ws, r, 6, f'=SUM(F{w0}:F{r-1})', HRS, True, F_TOT, h='center')
+name('VIS_PAC_HS', f"{q('Custo da sala')}!$F${r}"); ws.row_dimensions[r].height = 28; r += 2
 ws.row_breaks.append(Break(id=r - 1)); step(ws, r, 'Conta final — taxa de ocupação da sala'); r += 1
 hd3(ws, r, 'Cálculo', 'Valor', 'Como é feito'); r += 1
 cell(ws, r, 1, 'Horas de sala — atendimento da Dra. Patrícia'); cell(ws, r, 2, '=USO_HS', HRS); obs(ws, r, 'Passo 4'); r += 1
-cell(ws, r, 1, 'Horas de sala — avaliações dos pacientes'); cell(ws, r, 2, '=AVAL_HS', HRS); obs(ws, r, 'Passo 5'); r += 1
+cell(ws, r, 1, 'Horas de sala — visitas de avaliação'); cell(ws, r, 2, '=AVAL_HS', HRS); obs(ws, r, '="Passo 5: "&VIS_TOT&" visitas × "&VIS_MIN&" minutos"'); r += 1
 cell(ws, r, 1, 'Total de horas de sala', bold=True, fill=F_TOT); cell(ws, r, 2, '=USO_HS+AVAL_HS', HRS, True, F_TOT); obs(ws, r, None, F_TOT); r += 1
 cell(ws, r, 1, 'Custo de 1 sala por hora'); cell(ws, r, 2, '=SALA_HORA', BRL); obs(ws, r, 'Passo 3'); r += 1
 cell(ws, r, 1, 'Ocupação — atendimento da Dra. Patrícia'); cell(ws, r, 2, '=ROUND(SALA_HORA*USO_HS,2)', BRL); obs(ws, r, 'Custo por hora × horas do atendimento'); name('SALA_AT', f"{q('Custo da sala')}!$B${r}"); r += 1
-cell(ws, r, 1, 'Ocupação — avaliações dos pacientes'); cell(ws, r, 2, '=ROUND(SALA_HORA*AVAL_HS,2)', BRL); obs(ws, r, 'Custo por hora × horas das avaliações'); name('SALA_AV', f"{q('Custo da sala')}!$B${r}"); r += 1
+cell(ws, r, 1, 'Ocupação — visitas de avaliação'); cell(ws, r, 2, '=ROUND(SALA_HORA*AVAL_HS,2)', BRL); obs(ws, r, 'Custo por hora × horas das visitas'); name('SALA_AV', f"{q('Custo da sala')}!$B${r}"); r += 1
 cell(ws, r, 1, 'TAXA DE OCUPAÇÃO DA SALA', bold=True, fill=F_CLI, size=14); cell(ws, r, 2, '=SALA_AT+SALA_AV', BRL, True, F_CLI, 14)
-obs(ws, r, 'Atendimento + avaliações · vai para o Resumo', F_CLI); name('SALA_TAXA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 32; r += 2
+obs(ws, r, 'Atendimento + visitas de avaliação · vai para o Resumo', F_CLI); name('SALA_TAXA', f"{q('Custo da sala')}!$B${r}"); ws.row_dimensions[r].height = 32; r += 2
 x = ws.cell(r, 1, 'Para comparar: custo de 1 sala por hora conforme o nº de salas e a ocupação'); x.font = F(13, True, PET); r += 1
 head(ws, r, ['Nº de salas na unidade', 'Ocupação 100%', 'Ocupação 80%', 'Ocupação 65%'], 34); r += 1
 for n_ in (2, 3, 4, 5, 6):
@@ -266,7 +287,7 @@ CST = [('1. PIS', '=FAT_TOT', 0.0065, 'Imposto federal sobre a receita bruta', '
        ('4. Insumos (material usado)', '=FAT_TOT', 0.0349, 'Ativos, seringas, luvas e descartáveis. Sem compra em outubro: índice da clínica', 'C_INS'),
        ('5. Passagens aéreas', None, None, 'Passagens da viagem (aba Passagens)', 'C_PASS'),
        ('6. Ocupação da sala — atendimento', None, None, 'Custo de 1 sala por hora × horas de sala do atendimento da Dra. Patrícia: 2 salas na segunda e na terça (aba Custo da sala)', 'C_SALA1'),
-       ('6. Ocupação da sala — avaliações', None, None, 'Custo de 1 sala por hora × horas das avaliações dos pacientes na clínica (aba Custo da sala)', 'C_SALA2'),
+       ('6. Ocupação da sala — visitas', None, None, 'Custo de 1 sala por hora × horas das visitas de avaliação dos pacientes, 30 minutos cada (aba Custo da sala)', 'C_SALA2'),
        ('7. IRPJ e CSLL — consultas', '=FAT_CONS', 0.0768, 'Impostos sobre o lucro das consultas', 'C_IRC'),
        ('7. IRPJ e CSLL — procedimentos', '=FAT_TRI+FAT_FAC+FAT_PES+FAT_COR', 0.0228, 'Impostos sobre o lucro dos procedimentos (tricologia, facial, pescoço e corporal)', 'C_IRP')]
 r = 5; k0 = r
@@ -300,7 +321,7 @@ line(ws, r, 'RECEITA BRUTA TOTAL', f'=SUM(B{r0}:B{r-1})', 'Tudo o que os atendim
 sec(ws, r, 'DESPESAS (descontadas da receita bruta)'); r += 1; d0 = r
 DSP = [('1. PIS e COFINS', '=C_PIS+C_COF', 'Impostos federais sobre a receita'), ('2. Taxa do cartão (maquininha)', '=C_MDR', 'Cobrada nas vendas no cartão de crédito'),
        ('3. Antecipação do cartão', '=C_ANT', 'Para receber já as vendas parceladas'), ('4. Insumos', '=C_INS', 'Material usado nos atendimentos'),
-       ('5. Passagens aéreas', '=C_PASS', 'Viagem São Paulo – Acre – São Paulo'), ('6. Taxa de ocupação da sala', '=C_SALA1+C_SALA2', '="Atendimento da Dra. ("&TEXT(USO_HS,"0")&" h) + avaliações dos pacientes ("&TEXT(AVAL_HS,"0")&" h)"'),
+       ('5. Passagens aéreas', '=C_PASS', 'Viagem São Paulo – Acre – São Paulo'), ('6. Taxa de ocupação da sala', '=C_SALA1+C_SALA2', '="Atendimento da Dra. ("&FIXED(USO_HS,1)&" h) + "&VIS_TOT&" visitas dos pacientes ("&FIXED(AVAL_HS,1)&" h)"'),
        ('7. IRPJ e CSLL', '=C_IRC+C_IRP', 'Impostos sobre o lucro')]
 for lab, f, oq in DSP: line(ws, r, '   ' + lab, f, oq); r += 1
 line(ws, r, 'TOTAL DAS DESPESAS', f'=SUM(B{d0}:B{r-1})', 'Soma das 7 despesas', 't'); td = r; r += 2
@@ -317,6 +338,7 @@ CHK = [('Receita bruta igual à aba Receitas', f'=IF(ABS(B{rb}-FAT_TOT)<0.005,"O
        ('Total das despesas igual à aba Despesas', f'=IF(ABS(B{td}-C_TOT)<0.005,"OK","VERIFICAR")'),
        ('Taxa da sala igual à aba Custo da sala', '=IF(ABS(C_SALA1+C_SALA2-SALA_TAXA)<0.005,"OK","VERIFICAR")'),
        ('Custo mensal da sala igual à aba Despesas de CZS', '=IF(ABS(SALA_CF-CZS_TOT)<0.005,"OK","VERIFICAR")'),
+       ('Horas das visitas: por tratamento = por paciente', '=IF(ABS(AVAL_HS-VIS_PAC_HS)<0.005,"OK","VERIFICAR")'),
        ('Dra. Patrícia + clínica = resultado', f'=IF(ABS(B{rp}+B{rc}-B{res})<0.005,"OK","VERIFICAR")')]
 for lab, f in CHK:
     a = ws.cell(r, 1, lab); a.font = F(11, False, '4A5F63'); bb = ws.cell(r, 2, f); bb.font = F(11, True, '0F7F59'); bb.alignment = Alignment(horizontal='center'); r += 1
@@ -332,7 +354,7 @@ TXT = [('1', 'Receitas: relatório de transações do sistema de 05 a 07/10/2026
        ('5', 'Antecipação (8,74%): taxa informada pela diretoria. Todas as vendas no cartão de crédito de outubro foram antecipadas.'),
        ('6', 'Insumos (3,49%): não houve compra de material em outubro. O índice vem das compras de ago–set (R$ 6.281,73) sobre a receita da tricologia nesses meses (R$ 179.877,00). Quando houver nota fiscal, troque pela taxa real.'),
        ('7', 'Passagens: os 9 lançamentos Smiles da fatura do cartão de 05/10/2026, total de R$ 6.836,55, descontados por inteiro. A 2ª parcela de R$ 2.160,00 vem na fatura de novembro.'),
-       ('8', 'Taxa de ocupação da sala: despesas de Cruzeiro do Sul em setembro/2026 (relatório de transações, 24 lançamentos; só o aluguel da clínica, R$ 5.000,00; sem pró-labore), total de R$ '+FMTBR(CF_TOT)+', ÷ horas de sala ocupadas no mês (3 salas produtivas × dias × horas por dia × ocupação) = custo de 1 sala por hora. Esse valor × horas de sala usadas: atendimento da Dra. Patrícia (2 salas: segunda das 08h às 18h30 e terça das 07h às 17h30 = 42 horas) + avaliações na clínica (11 horas por paciente que fez procedimento). Detalhes nas abas "Custo da sala" e "Despesas de CZS".'),
+       ('8', 'Taxa de ocupação da sala: despesas de Cruzeiro do Sul em setembro/2026 (relatório de transações, 24 lançamentos; só o aluguel da clínica, R$ 5.000,00; sem pró-labore), total de R$ '+FMTBR(CF_TOT)+', ÷ horas de sala ocupadas no mês (3 salas produtivas × dias × horas por dia × ocupação) = custo de 1 sala por hora. Esse valor × horas de sala usadas: atendimento da Dra. Patrícia (2 salas: segunda das 08h às 18h30 e terça das 07h às 17h30 = 42 horas) + visitas de avaliação dos pacientes na clínica, 30 minutos cada (tricologia 11 visitas; pescoço, facial e corporal 8 visitas por paciente). Detalhes nas abas "Custo da sala" e "Despesas de CZS".'),
        ('9', 'IRPJ e CSLL: Lucro Presumido. Consultas: 7,68% (32% × 24%). Procedimentos: 2,28% (8% × 15% + 12% × 9%).')]
 r = 4
 for k, t in TXT:
